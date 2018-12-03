@@ -59,6 +59,14 @@ public class P2PFile {
         }
         return true;
     }
+
+    public String getFilename() {
+        return filename;
+    }
+
+    public long getSize() {
+        return size;
+    }
     
     
 }

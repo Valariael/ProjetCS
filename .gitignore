@@ -1,4 +1,7 @@
 build.xml
 nbproject
 manifest.mf
-/build/
+build
+dist
+test
+.git
