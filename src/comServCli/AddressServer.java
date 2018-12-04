@@ -12,11 +12,11 @@ import java.util.Objects;
  *
  * @author Axel Couturier
  */
-public class AddressServerTCP {
+public class AddressServer {
     private final String host;
     private final int port;
 
-    public AddressServerTCP(String host, int port) {
+    public AddressServer(String host, int port) {
         this.host = host;
         this.port = port;
     }
@@ -48,7 +48,7 @@ public class AddressServerTCP {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final AddressServerTCP other = (AddressServerTCP) obj;
+        final AddressServer other = (AddressServer) obj;
         if (this.port != other.port) {
             return false;
         }

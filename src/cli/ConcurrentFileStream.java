@@ -4,7 +4,11 @@
 0  and open the template in the editor.
 0 */
 package cli;
-import java.io.InputStream.*;
+
+import comServCli.P2PFile;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 
 /**
  *
@@ -12,8 +16,36 @@ import java.io.InputStream.*;
  */
 public class ConcurrentFileStream {
 
-    RandomAccessStream ras;
+    private P2PFile fichier;
+
+    public ConcurrentFileStream(P2PFile fichier) {
+        this.fichier = fichier;
+    }
     
     
-   
+
+    public synchronized void write(int filePointerOffset, byte[] bytes) {
+        RandomAccessFile stream = null;
+        try {
+            stream = new RandomAccessFile(fichier.getFilename(), "rw");
+        } catch (FileNotFoundException e) {
+            System.out.println(e);
+            System.exit(1);
+        }
+
+        try {
+            //Sets the file-pointer offset, measured from the beginning of this file, at which the next read or write occurs.
+            stream.seek(filePointerOffset);
+            stream.write(bytes);
+        } catch (IOException e) {
+            System.out.println(e);
+        } finally {
+            try {
+                stream.close();
+            } catch (IOException e) {
+                System.out.println(e);
+            }
+        }
+    }
+
 }

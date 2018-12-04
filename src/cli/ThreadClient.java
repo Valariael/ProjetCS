@@ -8,6 +8,8 @@ package cli;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -38,16 +40,30 @@ public class ThreadClient extends Thread {
              */
             Socket s = ss.accept();
             System.out.println("Connexion reçue");
+            ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+            oos.flush();
+            ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
+            
+            // Reception d'une requete de téléchargement : 
+            RequeteDownload r = (RequeteDownload)ois.readObject();
+            ThreadSender ts = new ThreadSender(r);
+            ts.run();
+            
+
             /*
+            1 - création d’une socket de communication TCP qui se connecte sur la socket
+d’écoute TCP de l’application P2PClient possédant le fichier ;
+2 - création d’une nouvelle socket UDP ;
+3 - envoi d’une requête à l’application P2PClient en utilisant la socket de
+communication TCP créée à l’étape 1;
+4 - fermeture de la socket de communication TCP créée à l’étape 1 ;
+5 - création d’un nouveau thread de type « ThreadReceiver ».
+            
                 attend une connexion,
                 - instancie un BufferedReader et un PrintWriter grâce à la socket de communication obtenue,
                 - attend une ligne de texte envoyée par le client et l'affiche à l'écran,
                 - renvoie cette ligne au client. 
-            BufferedReader plec = new BufferedReader(new InputStreamReader(s.getInputStream()));
-
-            PrintWriter pw = new PrintWriter(s.getOutputStream());
-            pw.flush();
-
+          
             System.out.println(plec.read());
             pw.write("test");
             pw.flush();
@@ -55,6 +71,8 @@ public class ThreadClient extends Thread {
             s.close();
             s = null;
         } catch (IOException ex) {
+            Logger.getLogger(ThreadClient.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ClassNotFoundException ex) {
             Logger.getLogger(ThreadClient.class.getName()).log(Level.SEVERE, null, ex);
         }
     }

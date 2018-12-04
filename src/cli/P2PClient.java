@@ -5,6 +5,7 @@
 0 */
 package cli;
 
+import comServCli.AddressServer;
 import comServCli.P2PFile;
 import comServCli.P2PFunctions;
 import java.io.File;
@@ -16,9 +17,12 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -27,8 +31,11 @@ import java.util.Scanner;
 public class P2PClient {
 
     private static ArrayList<P2PFile> listeFichiersLocaux;
+    private static ArrayList<P2PFile> resultatsRecherche;
+    private static InetAddress localAddress;
 
     public static void main(String[] args) {
+        resultatsRecherche = new ArrayList<>();
         if (args.length != 3) {
             System.out.println("Usage : java P2PClient IPServeur portServeur dossierContentantlesFichiers");
             System.exit(1);
@@ -57,6 +64,7 @@ public class P2PClient {
             sockComm = new DatagramSocket();
             // TODO : Modifier pour l'adresse du serveur
             sockComm.connect(InetAddress.getByName("8.8.8.8"), 10002);
+            localAddress = sockComm.getLocalAddress();
             System.out.println("Adresse locale : " + sockComm.getLocalAddress().getHostAddress() + ":" + sockComm.getLocalPort());
 
             // Dans un premier temps on va lister les fichiers qu'il y a dans le dossier  :
@@ -152,11 +160,66 @@ public class P2PClient {
         switch (reponse_[0]) {
             case "search":
                 String pattern = reponse_[1];
-                System.out.println("Pattern recherché :"+pattern);
+                System.out.println("Pattern recherché :" + pattern);
+                System.out.println("Liste des fichiers correspondants à votre recherche : ");
+                P2PFunctions.afficherListe(resultatsRecherche, true);
                 break;
             case "get":
+                // Envoi d'une requette au serveur pour obtenir la liste des ip
+                ArrayList<AddressServer> clientsQuiOntLefichier = new ArrayList<>();
+
+                try {
+                    int choix = Integer.parseInt(reponse_[1]);
+                    P2PFile fichierADL = resultatsRecherche.get(choix);
+
+                    int nbClientsQuiDisposentDeCeFichier = 4;
+
+                    // Découpe du fichier en x morceau :
+                    // Répartition entre les différents clients qui disposent de ce fichier : 
+                    // Création du concurrentfilestream pour que plusieurs clients puissent écrire :
+                    ConcurrentFileStream cfs = new ConcurrentFileStream(fichierADL);
+
+                    // Création des ThreadReceiver : 
+                    for (int i = 0; i < nbClientsQuiDisposentDeCeFichier; i++) {
+                        try {
+                            DatagramSocket sockUDPReceive = new DatagramSocket();
+                            // On récupère le port auquel on est bound :
+                            AddressServer destSocket = new AddressServer(localAddress.getHostAddress(), sockUDPReceive.getLocalPort());
+                            RequeteDownload r = new RequeteDownload(destSocket, null, fichierADL, 0, 500);
+
+                            // Envoi des informations sur le receiver au client qui va envoyer le fichier:
+                            Socket socket = new Socket();
+                            // Mettre l'ip du client ainsi que son port de threadclient ici :
+                            socket.connect(new InetSocketAddress(ipServ, portServ));
+                            ObjectOutputStream oos = null;
+                            ObjectInputStream ois = null;
+                            try {
+                                oos = new ObjectOutputStream(socket.getOutputStream());
+                                oos.flush();
+                                ois = new ObjectInputStream(socket.getInputStream());
+                                oos.close();
+                                oos = null;
+                                ois.close();
+                                ois = null;
+                            } catch (IOException ex) {
+                                Logger.getLogger(P2PClient.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                            
+
+                        } catch (SocketException ex) {
+                            System.out.println("Erreur lors de la création du socket");
+                        }
+                        ThreadReceiver tr = new ThreadReceiver();
+                    }
+
+                } catch (NumberFormatException e) {
+                    System.out.println("Vous n'avez pas entré un nombre ! ");
+                    affichageMenu();
+                }
                 break;
             case "list":
+                System.out.println("Liste des fichiers de votre dernière recherche : ");
+                P2PFunctions.afficherListe(resultatsRecherche, true);
                 break;
             case "local":
                 if (reponse_[1].equals("list")) {
