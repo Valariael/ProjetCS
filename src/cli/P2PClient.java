@@ -6,23 +6,27 @@
 package cli;
 
 import comServCli.P2PFile;
+import comServCli.P2PFunctions;
 import java.io.File;
 import java.io.IOException;
-import java.net.DatagramPacket;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 /**
  *
  * @author Axel Couturier
  */
 public class P2PClient {
+
+    private static ArrayList<P2PFile> listeFichiersLocaux;
 
     public static void main(String[] args) {
         if (args.length != 3) {
@@ -57,7 +61,7 @@ public class P2PClient {
 
             // Dans un premier temps on va lister les fichiers qu'il y a dans le dossier  :
             final File folder = new File(args[2]);
-            ArrayList<P2PFile> listeFichiersLocaux = new ArrayList<>();
+            listeFichiersLocaux = new ArrayList<>();
             if (folder.isDirectory()) {
                 for (final File fileEntry : folder.listFiles()) {
                     if (fileEntry.isDirectory()) {
@@ -65,7 +69,7 @@ public class P2PClient {
                     } else {
                         // Pour chaque fichier, on créé un P2PFile avec son nom et sa taille + on l'ajoutee a la liste.
                         // TODO : Possiblité d'optimisation : deux new file
-                        listeFichiersLocaux.add(new P2PFile(fileEntry.getName()));
+                        listeFichiersLocaux.add(new P2PFile(args[2] + "\\" + fileEntry.getName()));
                         System.out.println(fileEntry.getName());
                     }
                 }
@@ -76,11 +80,34 @@ public class P2PClient {
 
             // Création du serverSocket d'écoute :
             ServerSocket sockEcoute = new ServerSocket(0);
-            System.out.println("Port d'écoute : "+sockEcoute.getLocalPort());
-            
+            System.out.println("Port d'écoute : " + sockEcoute.getLocalPort());
+
+            // FIXME : Debug only
+            affichageMenu();
+
             // Connexion au serveur :
             Socket sockConnServer = new Socket();
             sockConnServer.connect(new InetSocketAddress(ipServ, portServ));
+            ObjectOutputStream oos = new ObjectOutputStream(sockConnServer.getOutputStream());
+            oos.flush();
+            ObjectInputStream ois = new ObjectInputStream(sockConnServer.getInputStream());
+
+            // Création du thread client :
+            ThreadClient c = new ThreadClient(sockEcoute);
+            c.start();
+
+            // Transmettre au serveur la liste des fichiers locaux :
+            oos.writeObject(listeFichiersLocaux);
+            oos.flush();
+
+            // Affichage du menu 
+            affichageMenu();
+
+            // Fermeture des flux du serveur 
+            oos.close();
+            oos = null;
+            ois.close();
+            oos = null;
 
 //            sockComm.send(pkRequete);
 //            bufRequete = new byte[100];
@@ -108,4 +135,46 @@ public class P2PClient {
         }
     }
 
+    /**
+     * Réalise l'affiche du menu de l'application cliente
+     */
+    public static void affichageMenu() {
+        System.out.println("Que voulez vous faire ?");
+        System.out.println("\t search <pattern>");
+        System.out.println("\t get <num>");
+        System.out.println("\t list");
+        System.out.println("\t local list");
+        System.out.println("\t quit");
+
+        Scanner sc = new Scanner(System.in);
+        String reponse = sc.nextLine();
+        String[] reponse_ = reponse.split(" ");
+        switch (reponse_[0]) {
+            case "search":
+                String pattern = reponse_[1];
+                System.out.println("Pattern recherché :"+pattern);
+                break;
+            case "get":
+                break;
+            case "list":
+                break;
+            case "local":
+                if (reponse_[1].equals("list")) {
+                    System.out.println("Liste des fichiers que vous avez en local : ");
+                    P2PFunctions.afficherListe(listeFichiersLocaux);
+                } else {
+                    System.out.println("Ceci n'est pas un choix !");
+                    affichageMenu();
+                }
+                break;
+            case "quit":
+
+                System.exit(0);
+                break;
+            default:
+                System.out.println("Ceci n'est pas un choix !");
+                affichageMenu();
+                break;
+        }
+    }
 }

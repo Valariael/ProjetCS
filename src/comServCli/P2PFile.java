@@ -18,14 +18,15 @@ public class P2PFile {
 
     private String filename;
     private long size;
+    private File fichier;
 
     public P2PFile(String filename) {
         this.filename = filename;
+        fichier = new File(filename);
         updateSize();
     }
 
     public void updateSize() {
-        File fichier = new File(filename);
         if (fichier.exists() && !fichier.isDirectory()) {
             size = fichier.length();
         }
@@ -67,6 +68,13 @@ public class P2PFile {
     public long getSize() {
         return size;
     }
+
+    @Override
+    public String toString() {
+        
+        return fichier.getName() + " [Size=" + size + ']';
+    }
+    
     
     
 }
