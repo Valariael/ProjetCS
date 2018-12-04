@@ -13,28 +13,24 @@ import java.util.Map;
  * Liste les couples de P2PFile et de listes d'adresse de P2PClient
  * @author Axel Ledermann <axel.ledermann at univ-fcomte.org>
  */
-public class ListFilesServer {
-    int size;
-    Map<P2PFile, List<String>> couplesFileAddr;
+public class ListFilesServer extends HashMap<P2PFile, List<String>> {
     
     /**
      * Constructeur de la liste des couples (P2PFile, liste d'adresses).
-     * @param size la taille maximum de la liste.
      */
-    public ListFilesServer(int size) {
-        this.size = size; //useful ?
-        this.couplesFileAddr = new HashMap<>(size);
+    public ListFilesServer() {
+        super();
     }
     
     /**
      * Recherche les P2PFile dont le nom de fichier correspond au nom passé en paramètre.
      * @param name le nom de fichier à rechercher.
-     * @return HashMap contenant les couples (P2PFile, liste d'adresses) dont le nom de fichie r
+     * @return HashMap contenant les couples (P2PFile, liste d'adresses) dont le nom de fichier
      */
     public Map searchPattern(String name) {
         int nFiles = 0;
         Map<P2PFile, List<String>> couplesSearched;
-        Iterator it = couplesFileAddr.entrySet().iterator();
+        Iterator it = this.entrySet().iterator();
         P2PFile file;
         
         while (it.hasNext()) {
