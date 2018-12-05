@@ -17,7 +17,7 @@ import java.net.Socket;
 public class P2PServer {
     
     public static void main(String[] args) {
-        // Vérification des paramètres du programme.
+        // Vérification des arguments du programme.
         if (args.length != 1) {
             System.out.println("Usage : java P2PServer portServeur");
             System.exit(1);

@@ -12,8 +12,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Sous processus interprétant les requêtes du client précédant le traitement du P2P.
@@ -45,6 +43,7 @@ public class ThreadServer extends Thread {
             // Instanciation des flux.
             ObjectInputStream ois = new ObjectInputStream(sockComm.getInputStream());
             ObjectOutputStream oos = new ObjectOutputStream(sockComm.getOutputStream());
+            oos.flush();
             
             // Création des variables et de l'AddressServer correspondant au client connecté
             AddressServer client = new AddressServer(sockComm.getInetAddress().getHostAddress(), sockComm.getPort());
@@ -78,8 +77,10 @@ public class ThreadServer extends Thread {
                     if(filesSearched == null) {
                         // TODO: throw no such file exception
                         oos.writeObject(null);
+                        oos.flush();
                     } else {
                         oos.writeObject(filesSearched);
+                        oos.flush();
                     }
                 } else if(requestParts[0].equals("get")) {
                     // Lecture du P2PFile (Map.Key) à télécharger.
@@ -92,9 +93,11 @@ public class ThreadServer extends Thread {
                         // TODO: throw no sources exception
                     }
                     oos.writeObject(sources);
+                    oos.flush();
                 } else {
                     // TODO: throw bad request exception
                     oos.writeObject(null);
+                    oos.flush();
                 }
             }
             System.out.println("DEBUG, Fin du thread.");
