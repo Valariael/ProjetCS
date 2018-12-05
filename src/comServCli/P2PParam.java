@@ -11,7 +11,15 @@ package comServCli;
  * @author Axel Couturier
  */
 public class P2PParam {
+
+    /**
+     * Taille maximum des buffers des DatagramPacket permettant l'envoi des fichiers sous forme d'octets.
+     */
     public static final int TAILLE_BUF = 1024;
+
+    /**
+     * Temps d'attente maximum après envoi d'un DatagramPacket.
+     */
     public static final int TIMEOUT_UDP = 30;
 
 }

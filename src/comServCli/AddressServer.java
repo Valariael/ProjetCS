@@ -9,22 +9,37 @@ package comServCli;
 import java.util.Objects;
 
 /**
- *
+ * Représente l'adresse d'un serveur avec l'adresse IP de l'hôte et son numéro de port.
+ * 
  * @author Axel Couturier
  */
 public class AddressServer {
     private final String host;
     private final int port;
 
+    /**
+     * Constructeur de la classe AddressServer.
+     * 
+     * @param host l'adresse IP¨de l'hôte sous forme de String
+     * @param port le numéro de port de l'hôte en int
+     */
     public AddressServer(String host, int port) {
         this.host = host;
         this.port = port;
     }
 
+    /**
+     * Retourne une String représentant l'adresse IP de l'hôte.
+     * @return l'adresse IP de l'hôte
+     */
     public String getHost() {
         return host;
     }
 
+    /**
+     * Retourne l'int représentant le numéro de port de l'hôte.
+     * @return le numéro de port de l'hôte
+     */
     public int getPort() {
         return port;
     }

@@ -10,12 +10,14 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * Classe principale pour le serveur.
+ * Classe principale pour le serveur P2P.
+ * 
  * @author Axel Ledermann <axel.ledermann at univ-fcomte.org>
  */
 public class P2PServer {
     
     public static void main(String[] args) {
+        // Vérification des paramètres du programme.
         if (args.length != 1) {
             System.out.println("Usage : java P2PServer portServeur");
             System.exit(1);
@@ -47,14 +49,14 @@ public class P2PServer {
                 sockComm = sockConn.accept();
 
                 
-                System.out.println("Connexion d'un client, adresse de la socket distante : " + sockComm.getInetAddress().getHostAddress() + ":" + sockComm.getPort());
-                // Lance un thread pour un client.
+                System.out.println("DEBUG, Connexion d'un client, adresse de la socket distante : " + sockComm.getInetAddress().getHostAddress() + ":" + sockComm.getPort());
+                // Lance un thread pour le client connecté.
                 ThreadServer t = new ThreadServer(sockComm, fileList);
                 t.start();
             }
         } catch (IOException e) {
             e.printStackTrace();
-            System.out.println(e.toString());
+            System.out.println(e);
         } finally {
             try {
                 if (sockComm != null) {
@@ -64,7 +66,7 @@ public class P2PServer {
                     sockConn.close();
                 }
             } catch (IOException e) {
-                System.out.println(e.toString());
+                System.out.println(e);
                 e.printStackTrace();
             }
         }

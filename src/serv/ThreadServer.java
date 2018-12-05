@@ -16,7 +16,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
+ * Sous processus interprétant les requêtes du client précédant le traitement du P2P.
+ * Échange les listes d'adresses avec le client.
+ * 
+ * Les threads partagent la liste des couples fichier/liste d'adresses des hôtes.
+ * 
  * @author Axel Ledermann <axel.ledermann at univ-fcomte.org>
  */
 public class ThreadServer extends Thread {
@@ -24,6 +28,12 @@ public class ThreadServer extends Thread {
     private Socket sockComm;
     private ListFilesServer fileList;
     
+    /**
+     * Constructeur de la classe ThreadServer.
+     * 
+     * @param comm le socket de communication du serveur lié au client connecté
+     * @param fileList la liste des fichiers accessibles par le serveur
+     */
     public ThreadServer(Socket comm, ListFilesServer fileList) {
         this.sockComm = comm;
         this.fileList = fileList;
@@ -36,6 +46,7 @@ public class ThreadServer extends Thread {
             ObjectInputStream ois = new ObjectInputStream(sockComm.getInputStream());
             ObjectOutputStream oos = new ObjectOutputStream(sockComm.getOutputStream());
             
+            // Création des variables et de l'AddressServer correspondant au client connecté
             AddressServer client = new AddressServer(sockComm.getInetAddress().getHostAddress(), sockComm.getPort());
             String request;
             String[] requestParts;
@@ -54,34 +65,39 @@ public class ThreadServer extends Thread {
                 
                 // Réception de la requête.
                 request = (String) ois.readObject();
-                System.out.println("Requête : " + request);
+                System.out.println("DEBUG, Requête : " + request);
                 
                 // Vérification de la requête.
                 // En cas d'erreur, lève une exception.
                 requestParts = request.split(" ");
                 if(requestParts[0].equals("search")) {
+                    // Recherche le pattern dans la liste des fichiers disponibles.
                     ListFilesServer filesSearched = fileList.searchPattern(requestParts[1]);
+                    
+                    // Écriture de la liste des fichiers correspondant.
                     if(filesSearched == null) {
-                        // throw no such file exception
+                        // TODO: throw no such file exception
                         oos.writeObject(null);
                     } else {
                         oos.writeObject(filesSearched);
                     }
                 } else if(requestParts[0].equals("get")) {
+                    // Lecture du P2PFile (Map.Key) à télécharger.
                     P2PFile fileToGet = (P2PFile) ois.readObject();
-                    //throw null pointer exception
+                    // TODO: throw null pointer exception
                     
+                    // Récupère la liste des sources possibles pour le fichier demandé.
                     ArrayList<AddressServer> sources = fileList.getSources(fileToGet);
                     if(sources == null) {
-                        //throw no sources exception
+                        // TODO: throw no sources exception
                     }
                     oos.writeObject(sources);
                 } else {
-                    //throw bad request exception
+                    // TODO: throw bad request exception
                     oos.writeObject(null);
                 }
             }
-            System.out.println("Fin du thread.");
+            System.out.println("DEBUG, Fin du thread.");
 
             // Fermeture des flux et de la connexion avec le client courant.
             oos.close();
@@ -90,10 +106,8 @@ public class ThreadServer extends Thread {
             ois = null;
             sockComm.close();
             sockComm = null;
-        } catch (IOException e) {
+        } catch (IOException | ClassNotFoundException e) {
             System.out.println(e);
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(ThreadServer.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
