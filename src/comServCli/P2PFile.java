@@ -5,32 +5,37 @@
 0 */
 package comServCli;
 
-import java.io.File;
-import java.net.InetAddress;
-import java.util.ArrayList;
 import java.util.Objects;
 
 /**
- *
+ * Classe représentant un fichier par son nom et sa taille.
+ * 
  * @author Axel Couturier
  */
 public class P2PFile {
 
     private String filename;
     private long size;
-    private File fichier;
+//    private File fichier;
 
-    public P2PFile(String filename) {
+    /**
+     * Constructeur de P2PFile.
+     * 
+     * @param filename String représentant le nom du fichier
+     * @param size la taille du fichier
+     */
+    public P2PFile(String filename, long size) {
         this.filename = filename;
-        fichier = new File(filename);
-        updateSize();
+//        fichier = new File(filename);
+//        updateSize();
+        this.size = size;
     }
 
-    public void updateSize() {
-        if (fichier.exists() && !fichier.isDirectory()) {
-            size = fichier.length();
-        }
-    }
+//    public void updateSize() {
+//        if (fichier.exists() && !fichier.isDirectory()) {
+//            size = fichier.length();
+//        }
+//    }
 
     @Override
     public int hashCode() {
@@ -71,10 +76,6 @@ public class P2PFile {
 
     @Override
     public String toString() {
-        
-        return fichier.getName() + " [Size=" + size + ']';
+        return filename + " [Size=" + size + ']';
     }
-    
-    
-    
 }
