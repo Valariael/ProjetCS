@@ -159,13 +159,14 @@ public class P2PClient {
                             for (int i = 0; i < nClients; i++) {
                                 try {
                                     DatagramSocket sockUDPReceive = new DatagramSocket();
-
+                                    chunkEnd = fileSize/nClients; // à modifier 
+                                    
                                     // Création du socket pour communiquer la requête de téléchargement au client détenteur du fichier
                                     Socket socket = new Socket();
                                     // Connexion au socket du client hôte n°i
                                     socket.connect(new InetSocketAddress(sources.get(i).getHost(), sources.get(i).getPort()));
                                     // On lie la requête au socket récepteur des paquets UDP et on y ajoute le P2PFile correspondant au fichier demandé aisni que les octets de début et de fin
-                                    r = new RequeteDownload(new AddressServer(sockUDPReceive.getLocalAddress().getHostAddress(), sockUDPReceive.getPort()), fichierADL, chunkStart, fileSize/nClients);
+                                    r = new RequeteDownload(new AddressServer(sockUDPReceive.getLocalAddress().getHostAddress(), sockUDPReceive.getPort()), fichierADL, chunkStart, chunkEnd);
                                     // On envoie la requête au client hôte
                                     try {
                                         roos = new ObjectOutputStream(socket.getOutputStream());
