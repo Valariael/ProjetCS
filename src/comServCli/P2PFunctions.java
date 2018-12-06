@@ -2,6 +2,8 @@ package comServCli;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Set;
 
 /* LPRO 2018/2019
 0  To change this license header, choose License Headers in Project Properties.
@@ -63,6 +65,23 @@ public class P2PFunctions {
             }
         }
         // TODO: possibilité d'évolution = recherche récursive des fichiers
+        
+        return fileList;
+    }
+
+    /**
+     * Permet de passer un set de P2PFile en ArrayList.
+     * 
+     * @param keySet le set de P2PFile
+     * @return la liste de P2PFile
+     */
+    public static ArrayList<P2PFile> setToArrayList(Set<P2PFile> keySet) {
+        Iterator<P2PFile> it = keySet.iterator();
+        ArrayList<P2PFile> fileList = new ArrayList();
+        
+        while(it.hasNext()) {
+            fileList.add(it.next());
+        }
         
         return fileList;
     }
