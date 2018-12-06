@@ -5,7 +5,10 @@
 package serv;
 
 import comServCli.AddressServer;
+import comServCli.BadRequestException;
 import comServCli.ListFilesServer;
+import comServCli.NoSourcesException;
+import comServCli.NoSuchFileException;
 import comServCli.P2PFile;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -58,7 +61,7 @@ public class ThreadServer extends Thread {
             // Lecture de chaque requête.
             while (true) {
                 // Si le client n'envoie plus d'objet, quitter la boucle.
-                if (!ois.readBoolean()) {
+                if (ois.readBoolean()) {
                     break;
                 }
                 
@@ -74,30 +77,37 @@ public class ThreadServer extends Thread {
                     ListFilesServer filesSearched = fileList.searchPattern(requestParts[1]);
                     
                     // Écriture de la liste des fichiers correspondant.
-                    if(filesSearched == null) {
-                        // TODO: throw no such file exception
-                        oos.writeObject(null);
-                        oos.flush();
-                    } else {
-                        oos.writeObject(filesSearched);
-                        oos.flush();
+                    try {
+                        if(filesSearched == null) throw new NoSuchFileException("Aucun fichier trouvé..");
+                    } catch (NoSuchFileException e) {
+                        System.out.println(e);
                     }
+                    oos.writeObject(filesSearched);
+                    oos.flush();
                 } else if(requestParts[0].equals("get")) {
                     // Lecture du P2PFile (Map.Key) à télécharger.
                     P2PFile fileToGet = (P2PFile) ois.readObject();
-                    // TODO: throw null pointer exception
+                    if(fileToGet == null) throw new NullPointerException("Aucun fichier à rechercher..");
                     
                     // Récupère la liste des sources possibles pour le fichier demandé.
-                    ArrayList<AddressServer> sources = fileList.getSources(fileToGet);
-                    if(sources == null) {
-                        // TODO: throw no sources exception
+                    ArrayList<AddressServer> sources = fileList.getSourcesFromFile(fileToGet);
+                    try {
+                        if(sources == null) {
+                            throw new NoSourcesException("Aucune source pour ce fichier..");
+                        }
+                    } catch (NoSourcesException e) {
+                        System.out.println(e);
                     }
                     oos.writeObject(sources);
                     oos.flush();
-                } else {
-                    // TODO: throw bad request exception
-                    oos.writeObject(null);
-                    oos.flush();
+                } else { // TODO : enhance exceptions
+                    try {
+                        throw new BadRequestException("Requête incorrecte..");
+                    } catch (BadRequestException e) {
+                        System.out.println(e);
+                        oos.writeObject(null); // TODO:gestion du retour d'erreur !!!!!!!!!!
+                        oos.flush();
+                    }
                 }
             }
             System.out.println("DEBUG, Fin du thread.");

@@ -94,7 +94,7 @@ public class ListFilesServer extends HashMap<P2PFile, ArrayList<AddressServer>> 
      * @param file le fichier concerné
      * @return la liste des adresses des clients possédant le fichier
      */
-    public ArrayList<AddressServer> getSources(P2PFile file) {
+    public ArrayList<AddressServer> getSourcesFromFile(P2PFile file) {
         return this.get(file);
     }
 }

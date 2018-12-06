@@ -50,11 +50,12 @@ public class P2PFunctions {
      * @return la liste des P2PFile créée à partir des fichiers trouvés dans le dossier
      */
     public static ArrayList<P2PFile> getLocalFiles(File folder) {
-        ArrayList<P2PFile> fileList = new ArrayList<>();
+        ArrayList<P2PFile> fileList = null;
         
         for (final File fileEntry : folder.listFiles()) {
             // On n'affiche pas les dossiers
             if (!fileEntry.isDirectory()) {
+                if(fileList == null) fileList = new ArrayList<>();
                 // Pour chaque fichier, on créé un P2PFile avec son nom et sa taille et on l'ajoute a la liste.
                 // TODO : Possiblité d'optimisation : deux new file
                 fileList.add(new P2PFile(folder.getAbsolutePath() + "\\" + fileEntry.getName(), fileEntry.length()));
