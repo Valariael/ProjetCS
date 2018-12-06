@@ -14,7 +14,7 @@ import java.io.RandomAccessFile;
  *
  * @author Axel Couturier
  */
-public class ConcurrentFileStream {
+public class ConcurrentFileStream { // extends P2PFile ?
 
     private P2PFile fichier;
 

@@ -18,12 +18,19 @@ public class RequeteDownload {
     private AddressServer adresseReceiver;
     private InetAddress demandeur;
     private P2PFile fichier;
-    private int premierMorceau;
-    private int dernierMorceau;
+    private long premierMorceau;
+    private long dernierMorceau;
 
-    public RequeteDownload(AddressServer receiver, AddressServer sender, P2PFile fichier, int premierMorceau, int dernierMorceau) {
+    public RequeteDownload(AddressServer adresseReceiver, InetAddress demandeur, P2PFile fichier, long premierMorceau, long dernierMorceau) {
         this.adresseReceiver = adresseReceiver;
         this.demandeur = demandeur;
+        this.fichier = fichier;
+        this.premierMorceau = premierMorceau;
+        this.dernierMorceau = dernierMorceau;
+    }
+    
+    public RequeteDownload(AddressServer adresseReceiver, P2PFile fichier, long premierMorceau, long dernierMorceau) {
+        this.adresseReceiver = adresseReceiver;
         this.fichier = fichier;
         this.premierMorceau = premierMorceau;
         this.dernierMorceau = dernierMorceau;
@@ -41,11 +48,11 @@ public class RequeteDownload {
         return fichier;
     }
 
-    public int getPremierMorceau() {
+    public long getPremierMorceau() {
         return premierMorceau;
     }
 
-    public int getDernierMorceau() {
+    public long getDernierMorceau() {
         return dernierMorceau;
     }
     

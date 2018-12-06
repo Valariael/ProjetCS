@@ -34,7 +34,7 @@ public class P2PClient {
     private static ArrayList<P2PFile> listeFichiersLocaux;
     private static ListFilesServer resultatsRecherche;
     private static ArrayList<P2PFile> downloadableFiles;
-    private static InetAddress localAddress;
+    private static AddressServer localAddress;
 
     public static void main(String[] args) {
         resultatsRecherche = new ListFilesServer();
@@ -120,15 +120,18 @@ public class P2PClient {
                         
                         resultatsRecherche = (ListFilesServer) ois.readObject();
                         System.out.println("Liste des fichiers correspondants à votre recherche :\n");
-                        // handle null liste
+                        //TODO: handle null liste
                         //optimisation: changer listfilesserver en treemap
                         downloadableFiles = P2PFunctions.setToArrayList(resultatsRecherche.keySet());
                         P2PFunctions.afficherListe(downloadableFiles, true);
                         break;
                     case "get":
+                        //TODO: verifier que le fichier n'est pas déjà present sur le client
+                        
                         //TODO: cas de la recherche non faite
                         // Envoi d'une requête au serveur pour obtenir la liste des IPs
                         ArrayList<AddressServer> sources = null;
+                        RequeteDownload r = null;
                         // check that num is in range
                         // get sources and file from num associated with listfilesserver
                         
@@ -137,48 +140,62 @@ public class P2PClient {
                             P2PFile fichierADL = downloadableFiles.get(choix);
                             sources = resultatsRecherche.getSourcesFromFile(fichierADL);
                             int nClients = sources.size();
-                            System.out.println("DEBUG: nClients=" + nClients);
+                            long fileSize = fichierADL.getSize();
+                            
+                            long chunkStart = 0, chunkEnd;
+//                            RequeteDownload[] fileDLRequests = new RequeteDownload[nClients];
+                            System.out.println("DEBUG: nClients=" + nClients + ", filesize=" + fileSize);
 
                             // Découpe du fichier en x morceau :
                             
-                            
                             // Répartition entre les différents clients qui disposent de ce fichier : 
-                            
                             
                             // Création du concurrentfilestream pour que plusieurs clients puissent écrire :
                             ConcurrentFileStream cfs = new ConcurrentFileStream(fichierADL);
 
+                            ObjectOutputStream roos = null;
+                            ObjectInputStream rois = null;
                             // Création des ThreadReceiver : 
                             for (int i = 0; i < nClients; i++) {
                                 try {
                                     DatagramSocket sockUDPReceive = new DatagramSocket();
-                                    // On récupère le port auquel on est bound :
-                                    AddressServer destSocket = new AddressServer(localAddress.getHostAddress(), sockUDPReceive.getLocalPort());
-                                    RequeteDownload r = new RequeteDownload(destSocket, null, fichierADL, 0, 500);
 
-                                    // Envoi des informations sur le receiver au client qui va envoyer le fichier:
+                                    // Création du socket pour communiquer la requête de téléchargement au client détenteur du fichier
                                     Socket socket = new Socket();
-                                    // Mettre l'ip du client ainsi que son port de threadclient ici :
-                                    socket.connect(new InetSocketAddress(ipServ, portServ));
-                                    ObjectOutputStream oos = null;
-                                    ObjectInputStream ois = null;
+                                    // Connexion au socket du client hôte n°i
+                                    socket.connect(new InetSocketAddress(sources.get(i).getHost(), sources.get(i).getPort()));
+                                    // On lie la requête au socket récepteur des paquets UDP et on y ajoute le P2PFile correspondant au fichier demandé aisni que les octets de début et de fin
+                                    r = new RequeteDownload(new AddressServer(sockUDPReceive.getLocalAddress().getHostAddress(), sockUDPReceive.getPort()), fichierADL, chunkStart, fileSize/nClients);
+                                    // On envoie la requête au client hôte
                                     try {
-                                        oos = new ObjectOutputStream(socket.getOutputStream());
-                                        oos.flush();
-                                        ois = new ObjectInputStream(socket.getInputStream());
-                                        oos.close();
-                                        oos = null;
-                                        ois.close();
-                                        ois = null;
-                                    } catch (IOException ex) {
-                                        Logger.getLogger(P2PClient.class.getName()).log(Level.SEVERE, null, ex);
+                                        roos = new ObjectOutputStream(socket.getOutputStream());
+                                        roos.flush();
+                                        rois = new ObjectInputStream(socket.getInputStream());
+                                        
+                                        roos.writeObject(r);
+                                        roos.flush();
+                                        
+                                        if(rois.readBoolean()) {
+                                            ThreadReceiver tr = new ThreadReceiver(sockUDPReceive, cfs);
+                                            tr.start();
+                                            // incrémenter les variables
+                                        } else {
+                                            // envoyer la requete a un autre client ?
+                                        }
+                                        
+                                        roos.close();
+                                        roos = null;
+                                        rois.close();
+                                        rois = null;
+                                    } catch (IOException e) {
+                                        e.printStackTrace();
+                                        System.out.println(e);
                                     }
 
 
                                 } catch (SocketException ex) {
                                     System.out.println("Erreur lors de la création du socket");
                                 }
-                                ThreadReceiver tr = new ThreadReceiver();
                             }
 
                         } catch (NumberFormatException e) {
@@ -240,7 +257,8 @@ public class P2PClient {
     }
 
     /**
-     * Réalise l'affiche du menu de l'application cliente
+     * Réalise l'affiche du menu de l'application cliente.
+     * @return la String entrée par l'utilisateur
      */
     public static String requestMenu() {
         System.out.println("Que voulez vous faire ?");
