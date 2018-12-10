@@ -159,7 +159,7 @@ public class P2PClient {
                             for (int i = 0; i < nClients; i++) {
                                 try {
                                     DatagramSocket sockUDPReceive = new DatagramSocket();
-                                    chunkEnd = fileSize/nClients; // à modifier 
+                                    chunkEnd = fileSize/nClients; // à modifier pour prendre le modulo aussi
                                     
                                     // Création du socket pour communiquer la requête de téléchargement au client détenteur du fichier
                                     Socket socket = new Socket();
@@ -177,8 +177,9 @@ public class P2PClient {
                                         roos.flush();
                                         
                                         if(rois.readBoolean()) {
-                                            ThreadReceiver tr = new ThreadReceiver(sockUDPReceive, cfs);
+                                            ThreadReceiver tr = new ThreadReceiver(sockUDPReceive, cfs, chunkStart);
                                             tr.start();
+                                            tr.join();
                                             // incrémenter les variables
                                         } else {
                                             // envoyer la requete a un autre client ?
@@ -188,11 +189,10 @@ public class P2PClient {
                                         roos = null;
                                         rois.close();
                                         rois = null;
-                                    } catch (IOException e) {
+                                    } catch (IOException | InterruptedException e) {
                                         e.printStackTrace();
                                         System.out.println(e);
                                     }
-
 
                                 } catch (SocketException ex) {
                                     System.out.println("Erreur lors de la création du socket");

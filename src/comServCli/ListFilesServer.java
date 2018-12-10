@@ -97,4 +97,10 @@ public class ListFilesServer extends HashMap<P2PFile, ArrayList<AddressServer>> 
     public ArrayList<AddressServer> getSourcesFromFile(P2PFile file) {
         return this.get(file);
     }
+
+    @Override
+    public String toString() {
+        return super.toString();
+    }
+    
 }

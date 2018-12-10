@@ -75,6 +75,7 @@ public class ThreadServer extends Thread {
                 if(requestParts[0].equals("search")) {
                     // Recherche le pattern dans la liste des fichiers disponibles.
                     ListFilesServer filesSearched = fileList.searchPattern(requestParts[1]);
+                    System.out.println("DEBUG, fichiers recherche " + filesSearched);
                     
                     // Écriture de la liste des fichiers correspondant.
                     try {
