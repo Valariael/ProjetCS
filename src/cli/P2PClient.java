@@ -9,6 +9,7 @@ import comServCli.AddressServer;
 import comServCli.ListFilesServer;
 import comServCli.P2PFile;
 import comServCli.P2PFunctions;
+import comServCli.P2PParam;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -145,21 +146,24 @@ public class P2PClient {
                             long chunkStart = 0, chunkEnd;
 //                            RequeteDownload[] fileDLRequests = new RequeteDownload[nClients];
                             System.out.println("DEBUG: nClients=" + nClients + ", filesize=" + fileSize);
-
-                            // Découpe du fichier en x morceau :
-                            
-                            // Répartition entre les différents clients qui disposent de ce fichier : 
                             
                             // Création du concurrentfilestream pour que plusieurs clients puissent écrire :
                             ConcurrentFileStream cfs = new ConcurrentFileStream(fichierADL);
 
                             ObjectOutputStream roos = null;
                             ObjectInputStream rois = null;
+                            
+                            // Découpe du fichier en x morceau :
+                            long totalChunks = (cfs.getFichier().getSize()/nClients);
+                            if(cfs.getFichier().getSize()%P2PParam.TAILLE_BUF != 0) totalChunks++;
+                            
                             // Création des ThreadReceiver : 
                             for (int i = 0; i < nClients; i++) {
                                 try {
+                                    // Répartition entre les différents clients qui disposent de ce fichier : 
                                     DatagramSocket sockUDPReceive = new DatagramSocket();
-                                    chunkEnd = fileSize/nClients; // à modifier pour prendre le modulo aussi
+                                    chunkStart = i*(nClients/totalChunks);
+                                    chunkEnd = (i+1)*(nClients/totalChunks);
                                     
                                     // Création du socket pour communiquer la requête de téléchargement au client détenteur du fichier
                                     Socket socket = new Socket();
