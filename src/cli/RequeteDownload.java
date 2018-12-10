@@ -8,13 +8,14 @@ package cli;
 
 import comServCli.AddressServer;
 import comServCli.P2PFile;
+import java.io.Serializable;
 import java.net.InetAddress;
 
 /**
  *
  * @author Axel Couturier
  */
-public class RequeteDownload {
+public class RequeteDownload implements Serializable {
     private AddressServer adresseReceiver;
     private InetAddress demandeur;
     private P2PFile fichier;

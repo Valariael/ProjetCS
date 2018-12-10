@@ -32,6 +32,7 @@ public class ThreadReceiver extends Thread {
         // Recoit les paquets et écrit dans le fichier de destination
         // Utiliser la classe concurentfilestream;
         //sockUDPReceive.receive(pkRequete);
+        System.out.println("Démarrage d'un threadReceiver sur le port "+sockUDPReceive.getLocalPort()+" qui doit recevoir le "+sockUDPReceive.getPort());
     }
     
 }

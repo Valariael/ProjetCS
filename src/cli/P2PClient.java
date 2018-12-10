@@ -62,7 +62,7 @@ public class P2PClient {
             System.exit(1);
         }
         final File folder = new File(args[2]);
-        if(!folder.isDirectory()) {
+        if (!folder.isDirectory()) {
             System.out.println("Le chemin entré n'est pas un dossier !");
             System.exit(1);
         }
@@ -76,11 +76,11 @@ public class P2PClient {
 //            // TODO : Modifier pour l'adresse du serveur
 //            sockComm.connect(InetAddress.getByName("8.8.8.8"), 10002);
 //            localAddress = sockComm.getLocalAddress();
-//            System.out.println("Adresse locale : " + sockComm.getLocalAddress().getHostAddress() + ":" + sockComm.getLocalPort());
+//           System.out.println("Adresse locale : " + sockComm.getLocalAddress().getHostAddress() + ":" + sockComm.getLocalPort());
 
             // Dans un premier temps on va lister les fichiers qu'il y a dans le dossier  :
             listeFichiersLocaux = P2PFunctions.getLocalFiles(folder);
-            if(listeFichiersLocaux == null) {
+            if (listeFichiersLocaux == null) {
                 System.out.println("DEBUG : Pas de fichiers locaux.");
             }
 
@@ -94,12 +94,14 @@ public class P2PClient {
             ObjectOutputStream oos = new ObjectOutputStream(sockConnServer.getOutputStream());
             oos.flush();
             ObjectInputStream ois = new ObjectInputStream(sockConnServer.getInputStream());
-            
+
             // Création du thread client :
             ThreadClient c = new ThreadClient(sockEcoute); // passer la liste des fichiers locaux en objet partagé ?
             c.start();
 
-            // Transmettre au serveur la liste des fichiers locaux :
+            // Transmettre au serveur la liste des fichiers locaux + AddressServeur du socketDecoute local:
+            oos.writeInt(sockEcoute.getLocalPort());
+            oos.flush();
             oos.writeObject(listeFichiersLocaux);
             oos.flush();
 
@@ -111,13 +113,14 @@ public class P2PClient {
                     case "search":
                         // TODO: ne pas autoriser les requetes avec plus de x espaces
                         //TODO: malformed request exception
+                        // TODO : Si le tableau est trop petit (search vide)
                         String pattern = reponse_[1];
                         System.out.println("Pattern recherché :" + pattern);
                         oos.writeBoolean(end);
                         oos.flush();
                         oos.writeObject(request);
                         oos.flush();
-                        
+
                         resultatsRecherche = (ListFilesServer) ois.readObject();
                         System.out.println("Liste des fichiers correspondants à votre recherche :\n");
                         //TODO: handle null liste
@@ -127,29 +130,30 @@ public class P2PClient {
                         break;
                     case "get":
                         //TODO: verifier que le fichier n'est pas déjà present sur le client
-                        
+
                         //TODO: cas de la recherche non faite
                         // Envoi d'une requête au serveur pour obtenir la liste des IPs
                         ArrayList<AddressServer> sources = null;
                         RequeteDownload r = null;
                         // check that num is in range
                         // get sources and file from num associated with listfilesserver
-                        
+
                         try {
-                            int choix = Integer.parseInt(reponse_[1])-1; // -1 pour matcher avec la liste
+                            int choix = Integer.parseInt(reponse_[1]) - 1; // -1 pour matcher avec la liste
                             P2PFile fichierADL = downloadableFiles.get(choix);
                             sources = resultatsRecherche.getSourcesFromFile(fichierADL);
                             int nClients = sources.size();
                             long fileSize = fichierADL.getSize();
-                            
+
                             long chunkStart = 0, chunkEnd;
-//                            RequeteDownload[] fileDLRequests = new RequeteDownload[nClients];
+                            //  RequeteDownload[] fileDLRequests = new RequeteDownload[nClients];
                             System.out.println("DEBUG: nClients=" + nClients + ", filesize=" + fileSize);
+                            for (int i = 0; i < nClients; i++) {
+                                System.out.println(sources.get(i));
+                            }
 
                             // Découpe du fichier en x morceau :
-                            
                             // Répartition entre les différents clients qui disposent de ce fichier : 
-                            
                             // Création du concurrentfilestream pour que plusieurs clients puissent écrire :
                             ConcurrentFileStream cfs = new ConcurrentFileStream(fichierADL);
 
@@ -159,31 +163,33 @@ public class P2PClient {
                             for (int i = 0; i < nClients; i++) {
                                 try {
                                     DatagramSocket sockUDPReceive = new DatagramSocket();
-                                    chunkEnd = fileSize/nClients; // à modifier 
-                                    
+                                    chunkEnd = fileSize / nClients; // à modifier 
+
                                     // Création du socket pour communiquer la requête de téléchargement au client détenteur du fichier
                                     Socket socket = new Socket();
                                     // Connexion au socket du client hôte n°i
+                                    System.out.println("DEBUG : Connexion au socket du client hote suivant : "+sources.get(i).getHost()+":"+ sources.get(i).getPort());
                                     socket.connect(new InetSocketAddress(sources.get(i).getHost(), sources.get(i).getPort()));
+                                   
                                     // On lie la requête au socket récepteur des paquets UDP et on y ajoute le P2PFile correspondant au fichier demandé aisni que les octets de début et de fin
-                                    r = new RequeteDownload(new AddressServer(sockUDPReceive.getLocalAddress().getHostAddress(), sockUDPReceive.getPort()), fichierADL, chunkStart, chunkEnd);
+                                    r = new RequeteDownload(new AddressServer(sockUDPReceive.getLocalAddress().getHostAddress(), sockUDPReceive.getLocalPort()), fichierADL, chunkStart, chunkEnd);
                                     // On envoie la requête au client hôte
                                     try {
                                         roos = new ObjectOutputStream(socket.getOutputStream());
                                         roos.flush();
                                         rois = new ObjectInputStream(socket.getInputStream());
-                                        
+
                                         roos.writeObject(r);
                                         roos.flush();
-                                        
-                                        if(rois.readBoolean()) {
+
+                                        if (rois.readBoolean()) {
                                             ThreadReceiver tr = new ThreadReceiver(sockUDPReceive, cfs);
                                             tr.start();
                                             // incrémenter les variables
                                         } else {
                                             // envoyer la requete a un autre client ?
                                         }
-                                        
+
                                         roos.close();
                                         roos = null;
                                         rois.close();
@@ -193,9 +199,9 @@ public class P2PClient {
                                         System.out.println(e);
                                     }
 
-
                                 } catch (SocketException ex) {
                                     System.out.println("Erreur lors de la création du socket");
+                                    System.out.println(ex.getMessage());
                                 }
                             }
 
@@ -222,8 +228,8 @@ public class P2PClient {
                         System.out.println("Ceci n'est pas un choix !");
                         break;
                 }
-            }while(!end);
-            
+            } while (!end);
+
             oos.writeBoolean(end);
 
 //            sockComm.send(pkRequete);
@@ -259,6 +265,7 @@ public class P2PClient {
 
     /**
      * Réalise l'affiche du menu de l'application cliente.
+     *
      * @return la String entrée par l'utilisateur
      */
     public static String requestMenu() {

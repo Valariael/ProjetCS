@@ -49,7 +49,8 @@ public class ThreadServer extends Thread {
             oos.flush();
             
             // Création des variables et de l'AddressServer correspondant au client connecté
-            AddressServer client = new AddressServer(sockComm.getInetAddress().getHostAddress(), sockComm.getPort());
+            int portSockEcoute = ois.readInt();
+            AddressServer client = new AddressServer(sockComm.getInetAddress().getHostAddress(), portSockEcoute);
             String request;
             String[] requestParts;
             
@@ -58,6 +59,7 @@ public class ThreadServer extends Thread {
             
             // Mise a jour de la liste des fichiers sur le serveur
             fileList.updateList(clientFiles, client);
+           
             // Lecture de chaque requête.
             while (true) {
                 // Si le client n'envoie plus d'objet, quitter la boucle.

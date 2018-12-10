@@ -11,11 +11,11 @@ import java.net.Socket;
 
 /**
  * Classe principale pour le serveur P2P.
- * 
+ *
  * @author Axel Ledermann <axel.ledermann at univ-fcomte.org>
  */
 public class P2PServer {
-    
+
     public static void main(String[] args) {
         // Vérification des arguments du programme.
         if (args.length != 1) {
@@ -34,11 +34,11 @@ public class P2PServer {
             System.out.println("Numéro de port non autorisé ou non valide !");
             System.exit(1);
         }
-        
+
         ServerSocket sockConn = null;
         Socket sockComm = null;
         ListFilesServer fileList = new ListFilesServer();
-        
+
         try {
             // Création du socket serveur.
             sockConn = new ServerSocket(portServ);
@@ -48,7 +48,6 @@ public class P2PServer {
                 // Attend une connexion d'un client.
                 sockComm = sockConn.accept();
 
-                
                 System.out.println("DEBUG, Connexion d'un client, adresse de la socket distante : " + sockComm.getInetAddress().getHostAddress() + ":" + sockComm.getPort());
                 // Lance un thread pour le client connecté.
                 ThreadServer t = new ThreadServer(sockComm, fileList);

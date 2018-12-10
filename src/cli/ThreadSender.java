@@ -16,8 +16,8 @@ import comServCli.P2PFile;
 public class ThreadSender extends Thread {
     
     private P2PFile fichier;
-    private int premierMorceau;
-    private int dernierMorceau;
+    private long premierMorceau;
+    private long dernierMorceau;
     private AddressServer destinataire;
 
     public ThreadSender(RequeteDownload r) {
@@ -30,6 +30,6 @@ public class ThreadSender extends Thread {
     
 
     public void run() {
-        
+        System.out.println("DEBUG : Démarrage d'un threadSender à destination de "+destinataire);
     }
 }

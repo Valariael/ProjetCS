@@ -12,7 +12,7 @@ import java.util.Set;
 0 */
 /**
  * Classe contenant les fonctions de traitement pour le client et le serveur.
- * 
+ *
  * @author Axel Couturier
  */
 public class P2PFunctions {
@@ -34,30 +34,35 @@ public class P2PFunctions {
      */
     public static void afficherListe(ArrayList<P2PFile> listeFichiers, boolean numerotee) {
         int i = 0;
-        if (listeFichiers.size() >= 1) {
-            for (P2PFile fichier : listeFichiers) {
-                i++;
-                System.out.println("\t " + (numerotee ? i + ". " : "- ") + fichier.toString());
+        if (listeFichiers != null) {
+            if (listeFichiers.size() >= 1) {
+                for (P2PFile fichier : listeFichiers) {
+                    i++;
+                    System.out.println("\t " + (numerotee ? i + ". " : "- ") + fichier.toString());
+                }
+            } else {
+                System.out.println("Il n'y a aucun résultat");
             }
-        } else {
-            System.out.println("Il n'y a aucun résultat");
         }
 
     }
-    
+
     /**
      * Recherche tous les fichiers présents dans le dossier passé en paramètre.
-     * 
+     *
      * @param folder le dossier cible
-     * @return la liste des P2PFile créée à partir des fichiers trouvés dans le dossier
+     * @return la liste des P2PFile créée à partir des fichiers trouvés dans le
+     * dossier
      */
     public static ArrayList<P2PFile> getLocalFiles(File folder) {
         ArrayList<P2PFile> fileList = null;
-        
+
         for (final File fileEntry : folder.listFiles()) {
             // On n'affiche pas les dossiers
             if (!fileEntry.isDirectory()) {
-                if(fileList == null) fileList = new ArrayList<>();
+                if (fileList == null) {
+                    fileList = new ArrayList<>();
+                }
                 // Pour chaque fichier, on créé un P2PFile avec son nom et sa taille et on l'ajoute a la liste.
                 // TODO : Possiblité d'optimisation : deux new file
                 fileList.add(new P2PFile(folder.getAbsolutePath() + "\\" + fileEntry.getName(), fileEntry.length()));
@@ -65,24 +70,24 @@ public class P2PFunctions {
             }
         }
         // TODO: possibilité d'évolution = recherche récursive des fichiers
-        
+
         return fileList;
     }
 
     /**
      * Permet de passer un set de P2PFile en ArrayList.
-     * 
+     *
      * @param keySet le set de P2PFile
      * @return la liste de P2PFile
      */
     public static ArrayList<P2PFile> setToArrayList(Set<P2PFile> keySet) {
         Iterator<P2PFile> it = keySet.iterator();
         ArrayList<P2PFile> fileList = new ArrayList();
-        
-        while(it.hasNext()) {
+
+        while (it.hasNext()) {
             fileList.add(it.next());
         }
-        
+
         return fileList;
     }
 }

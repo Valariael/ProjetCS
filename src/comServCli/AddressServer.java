@@ -6,6 +6,7 @@
 
 package comServCli;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
@@ -13,7 +14,7 @@ import java.util.Objects;
  * 
  * @author Axel Couturier
  */
-public class AddressServer {
+public class AddressServer implements Serializable {
     private final String host;
     private final int port;
 
@@ -71,6 +72,11 @@ public class AddressServer {
             return false;
         }
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return "AddressServer{" + "host=" + host + ", port=" + port + '}';
     }
     
      

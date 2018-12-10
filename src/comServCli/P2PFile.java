@@ -5,6 +5,7 @@
 0 */
 package comServCli;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
@@ -12,7 +13,7 @@ import java.util.Objects;
  * 
  * @author Axel Couturier
  */
-public class P2PFile {
+public class P2PFile implements Serializable {
 
     private String filename;
     private long size;
