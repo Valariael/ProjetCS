@@ -9,6 +9,7 @@ import comServCli.AddressServer;
 import comServCli.ListFilesServer;
 import comServCli.P2PFile;
 import comServCli.P2PFunctions;
+import comServCli.P2PParam;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -159,12 +160,19 @@ public class P2PClient {
 
                             ObjectOutputStream roos = null;
                             ObjectInputStream rois = null;
+                            
+                            // Découpe du fichier en x morceau :
+                            long totalChunks = (cfs.getFichier().getSize()/nClients);
+                            if(cfs.getFichier().getSize()%P2PParam.TAILLE_BUF != 0) totalChunks++;
+                            
                             // Création des ThreadReceiver : 
                             for (int i = 0; i < nClients; i++) {
                                 try {
+                                    // Répartition entre les différents clients qui disposent de ce fichier : 
                                     DatagramSocket sockUDPReceive = new DatagramSocket();
-                                    chunkEnd = fileSize / nClients; // à modifier 
-
+                                    chunkStart = i*(nClients/totalChunks);
+                                    chunkEnd = (i+1)*(nClients/totalChunks);
+                                    
                                     // Création du socket pour communiquer la requête de téléchargement au client détenteur du fichier
                                     Socket socket = new Socket();
                                     // Connexion au socket du client hôte n°i
@@ -183,8 +191,9 @@ public class P2PClient {
                                         roos.flush();
 
                                         if (rois.readBoolean()) {
-                                            ThreadReceiver tr = new ThreadReceiver(sockUDPReceive, cfs);
+                                            ThreadReceiver tr = new ThreadReceiver(sockUDPReceive, cfs, chunkStart);
                                             tr.start();
+                                            tr.join();
                                             // incrémenter les variables
                                         } else {
                                             // envoyer la requete a un autre client ?
@@ -194,7 +203,7 @@ public class P2PClient {
                                         roos = null;
                                         rois.close();
                                         rois = null;
-                                    } catch (IOException e) {
+                                    } catch (IOException | InterruptedException e) {
                                         e.printStackTrace();
                                         System.out.println(e);
                                     }

@@ -14,7 +14,7 @@ import java.io.RandomAccessFile;
  *
  * @author Axel Couturier
  */
-public class ConcurrentFileStream { // extends P2PFile ?
+public class ConcurrentFileStream {
 
     private P2PFile fichier;
 
@@ -24,7 +24,7 @@ public class ConcurrentFileStream { // extends P2PFile ?
     
     
 
-    public synchronized void write(int filePointerOffset, byte[] bytes) {
+    public synchronized void write(long filePointerOffset, byte[] bytes) {
         RandomAccessFile stream = null;
         try {
             stream = new RandomAccessFile(fichier.getFilename(), "rw");
@@ -35,7 +35,11 @@ public class ConcurrentFileStream { // extends P2PFile ?
 
         try {
             //Sets the file-pointer offset, measured from the beginning of this file, at which the next read or write occurs.
-            stream.seek(filePointerOffset);
+            if(stream.length() < filePointerOffset) {
+                stream.seek(stream.length()-1);
+            } else {
+                stream.seek(filePointerOffset);
+            }
             stream.write(bytes);
         } catch (IOException e) {
             System.out.println(e);
@@ -46,6 +50,10 @@ public class ConcurrentFileStream { // extends P2PFile ?
                 System.out.println(e);
             }
         }
+    }
+
+    public P2PFile getFichier() {
+        return fichier;
     }
 
 }

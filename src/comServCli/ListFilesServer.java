@@ -81,4 +81,10 @@ public class ListFilesServer extends ConcurrentHashMap<P2PFile, ArrayList<Addres
     public ArrayList<AddressServer> getSourcesFromFile(P2PFile file) {
         return this.get(file);
     }
+
+    @Override
+    public String toString() {
+        return super.toString();
+    }
+    
 }
