@@ -71,13 +71,7 @@ public class P2PClient {
         boolean end = false;
         String request;
         Socket sockConnServer = null;
-//        DatagramSocket sockComm = null;
         try {
-//            sockComm = new DatagramSocket();
-//            // TODO : Modifier pour l'adresse du serveur
-//            sockComm.connect(InetAddress.getByName("8.8.8.8"), 10002);
-//            localAddress = sockComm.getLocalAddress();
-//           System.out.println("Adresse locale : " + sockComm.getLocalAddress().getHostAddress() + ":" + sockComm.getLocalPort());
 
             // Dans un premier temps on va lister les fichiers qu'il y a dans le dossier  :
             listeFichiersLocaux = P2PFunctions.getLocalFiles(folder);
@@ -95,9 +89,13 @@ public class P2PClient {
             ObjectOutputStream oos = new ObjectOutputStream(sockConnServer.getOutputStream());
             oos.flush();
             ObjectInputStream ois = new ObjectInputStream(sockConnServer.getInputStream());
-
+            
+            // On va récuperer notre IP locale depuis le serveur car on ne sait pas laquelle est utilisée : 
+            InetAddress myIP = (InetAddress) ois.readObject();
+            System.out.println("DEBUG : Selon le serveur, votre ip est "+myIP.getHostAddress());
+            
             // Création du thread client :
-            ThreadClient c = new ThreadClient(sockEcoute); // passer la liste des fichiers locaux en objet partagé ?
+            ThreadClient c = new ThreadClient(sockEcoute, folder); // passer la liste des fichiers locaux en objet partagé ?
             c.start();
 
             // Transmettre au serveur la liste des fichiers locaux + AddressServeur du socketDecoute local:
@@ -145,33 +143,32 @@ public class P2PClient {
                             sources = resultatsRecherche.getSourcesFromFile(fichierADL);
                             int nClients = sources.size();
                             long fileSize = fichierADL.getSize();
-
-                            long chunkStart = 0, chunkEnd;
-                            //  RequeteDownload[] fileDLRequests = new RequeteDownload[nClients];
-                            System.out.println("DEBUG: nClients=" + nClients + ", filesize=" + fileSize);
-                            for (int i = 0; i < nClients; i++) {
-                                System.out.println(sources.get(i));
-                            }
-
-                            // Découpe du fichier en x morceau :
-                            // Répartition entre les différents clients qui disposent de ce fichier : 
-                            // Création du concurrentfilestream pour que plusieurs clients puissent écrire :
-                            ConcurrentFileStream cfs = new ConcurrentFileStream(fichierADL);
+                            long nombreMorceaux = (long) Math.ceil((double)fileSize/P2PParam.TAILLE_BUF);
+                            
+                            long chunkStart, chunkEnd;
+                            long nbMorceauxParClient = (long) Math.ceil(nombreMorceaux/nClients);
+                            System.out.println("DEBUG: nClients=" + nClients + ", filesize=" + fileSize + ", nbMorceau="+nombreMorceaux+", nbMorceauxParClient="+nbMorceauxParClient);
+                            
+                            ConcurrentFileStream cfs = new ConcurrentFileStream(folder, fichierADL);
 
                             ObjectOutputStream roos = null;
                             ObjectInputStream rois = null;
                             
                             // Découpe du fichier en x morceau :
-                            long totalChunks = (cfs.getFichier().getSize()/nClients);
-                            if(cfs.getFichier().getSize()%P2PParam.TAILLE_BUF != 0) totalChunks++;
-                            
+                            long MorceauxAttribues = 0;
                             // Création des ThreadReceiver : 
                             for (int i = 0; i < nClients; i++) {
                                 try {
                                     // Répartition entre les différents clients qui disposent de ce fichier : 
                                     DatagramSocket sockUDPReceive = new DatagramSocket();
-                                    chunkStart = i*(nClients/totalChunks);
-                                    chunkEnd = (i+1)*(nClients/totalChunks);
+                                    chunkStart = MorceauxAttribues;
+                                    chunkEnd = MorceauxAttribues+nbMorceauxParClient;
+                                    if(i == (nClients-1)) {
+                                        // Si on est sur le dernier client :
+                                        chunkEnd = nombreMorceaux;
+                                    }
+                                    MorceauxAttribues =+ nbMorceauxParClient;
+                                    System.out.println("DEBUG : chunkStart: "+chunkStart+" chunkEnd: "+chunkEnd);
                                     
                                     // Création du socket pour communiquer la requête de téléchargement au client détenteur du fichier
                                     Socket socket = new Socket();
@@ -180,7 +177,7 @@ public class P2PClient {
                                     socket.connect(new InetSocketAddress(sources.get(i).getHost(), sources.get(i).getPort()));
                                    
                                     // On lie la requête au socket récepteur des paquets UDP et on y ajoute le P2PFile correspondant au fichier demandé aisni que les octets de début et de fin
-                                    r = new RequeteDownload(new AddressServer(sockUDPReceive.getLocalAddress().getHostAddress(), sockUDPReceive.getLocalPort()), fichierADL, chunkStart, chunkEnd);
+                                    r = new RequeteDownload(new AddressServer(myIP.getHostAddress(), sockUDPReceive.getLocalPort()), fichierADL, chunkStart, chunkEnd);
                                     // On envoie la requête au client hôte
                                     try {
                                         roos = new ObjectOutputStream(socket.getOutputStream());
@@ -193,7 +190,8 @@ public class P2PClient {
                                         if (rois.readBoolean()) {
                                             ThreadReceiver tr = new ThreadReceiver(sockUDPReceive, cfs, chunkStart);
                                             tr.start();
-                                            tr.join();
+                                            
+                                            //tr.join();
                                             // incrémenter les variables
                                         } else {
                                             // envoyer la requete a un autre client ?
@@ -203,16 +201,19 @@ public class P2PClient {
                                         roos = null;
                                         rois.close();
                                         rois = null;
-                                    } catch (IOException | InterruptedException e) {
+                                    } catch (IOException e) {
                                         e.printStackTrace();
                                         System.out.println(e);
                                     }
 
                                 } catch (SocketException ex) {
-                                    System.out.println("Erreur lors de la création du socket");
+                                    System.out.println("Erreur lors de la connexion au socket d'écoute d'un client");
                                     System.out.println(ex.getMessage());
                                 }
                             }
+                            
+                            // Fermeture de l'écriture du fichier
+                            //cfs.close();
 
                         } catch (NumberFormatException e) {
                             System.out.println("Vous n'avez pas entré un nombre ! ");

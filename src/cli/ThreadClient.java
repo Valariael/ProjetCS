@@ -6,6 +6,7 @@
 package cli;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
@@ -23,9 +24,11 @@ import java.util.logging.Logger;
 public class ThreadClient extends Thread {
 
     private ServerSocket ss;
+    private File folder;
 
-    public ThreadClient(ServerSocket ss) {
+    public ThreadClient(ServerSocket ss, File folder) {
         this.ss = ss;
+        this.folder = folder;
     }
 
     @Override
@@ -48,7 +51,7 @@ public class ThreadClient extends Thread {
             RequeteDownload r = (RequeteDownload) ois.readObject();
             oos.writeBoolean(true);
             oos.flush();
-            ThreadSender ts = new ThreadSender(r);
+            ThreadSender ts = new ThreadSender(r, folder);
             ts.run();
 
             s.close();

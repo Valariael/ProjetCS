@@ -64,8 +64,8 @@ public class P2PFunctions {
                     fileList = new ArrayList<>();
                 }
                 // Pour chaque fichier, on créé un P2PFile avec son nom et sa taille et on l'ajoute a la liste.
-                // TODO : Possiblité d'optimisation : deux new file
-                fileList.add(new P2PFile(folder.getAbsolutePath() + "\\" + fileEntry.getName(), fileEntry.length()));
+                // TODO : Possiblité d'optimisation : deux new file folder.getAbsolutePath() + "\\" +
+                fileList.add(new P2PFile(fileEntry.getName(), fileEntry.length()));
                 System.out.println("DEBUG : (localfile) " + folder.getAbsolutePath() + "\\" + fileEntry.getName());
             }
         }

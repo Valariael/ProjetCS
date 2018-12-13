@@ -48,6 +48,10 @@ public class ThreadServer extends Thread {
             ObjectOutputStream oos = new ObjectOutputStream(sockComm.getOutputStream());
             oos.flush();
             
+            // On renvoie directement l'ip du client car c'est le seul moment ou on la connait :
+            oos.writeObject(sockComm.getInetAddress());
+            oos.flush();
+            
             // Création des variables et de l'AddressServer correspondant au client connecté
             int portSockEcoute = ois.readInt();
             AddressServer client = new AddressServer(sockComm.getInetAddress().getHostAddress(), portSockEcoute);

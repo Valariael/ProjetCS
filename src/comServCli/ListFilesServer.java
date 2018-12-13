@@ -36,7 +36,7 @@ public class ListFilesServer extends ConcurrentHashMap<P2PFile, ArrayList<Addres
         ListFilesServer couplesSearched = null;
         Iterator it = this.entrySet().iterator();
         P2PFile file;
-
+        System.out.println("DEBUG : Nombre de fichiers que sur lesquels on va chercher : "+this.size());
         // Parcourt les entrées de l'objet et vérifie pour chaque clé si le nom du P2PFile contient le pattern.
         while (it.hasNext()) {
             Map.Entry paire = (Map.Entry) it.next();
@@ -61,15 +61,18 @@ public class ListFilesServer extends ConcurrentHashMap<P2PFile, ArrayList<Addres
      * @param client l'adresse du client
      */
     public synchronized void updateList(ArrayList<P2PFile> newFiles, AddressServer client) {
-        for (P2PFile f : newFiles) {
-            ArrayList<AddressServer> clientList = new ArrayList();
-            if (this.get(f) != null) {
-                this.get(f).add(client);
-            } else {
-                clientList.add(client);
-                this.put(f, clientList);
+        if (newFiles != null && newFiles.size() >= 1) {
+            for (P2PFile f : newFiles) {
+                ArrayList<AddressServer> clientList = new ArrayList();
+                if (this.get(f) != null) {
+                    this.get(f).add(client);
+                } else {
+                    clientList.add(client);
+                    this.put(f, clientList);
+                }
             }
         }
+
     }
 
     /**
@@ -86,5 +89,5 @@ public class ListFilesServer extends ConcurrentHashMap<P2PFile, ArrayList<Addres
     public String toString() {
         return super.toString();
     }
-    
+
 }
