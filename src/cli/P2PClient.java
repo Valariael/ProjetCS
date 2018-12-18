@@ -188,7 +188,7 @@ public class P2PClient {
                                         roos.flush();
 
                                         if (rois.readBoolean()) {
-                                            ThreadReceiver tr = new ThreadReceiver(sockUDPReceive, cfs, chunkStart);
+                                            ThreadReceiver tr = new ThreadReceiver(sockUDPReceive, cfs, chunkStart, chunkEnd);
                                             tr.start();
                                             
                                             //tr.join();

@@ -70,6 +70,9 @@ public class ThreadSender extends Thread {
 
                     // On lit le fichier morceau par morceau.
                     for (long i = premierMorceau; i < dernierMorceau; i++) {
+                        if(i==1997) {
+                            continue;
+                        }
                         System.out.println("Envoi du morceau"+i+"/"+dernierMorceau);
                         long position = i * P2PParam.TAILLE_BUF;
                         ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
@@ -92,14 +95,10 @@ public class ThreadSender extends Thread {
                         System.arraycopy(buffer.array(), 0, bytes, 0, 8);
 
                         packetSend = new DatagramPacket(bytes, bytes.length, new InetSocketAddress(destinataire.getHost(), destinataire.getPort()));
-                        System.out.println("DEBUG : Paquet envoyé : " + Arrays.toString(bytes));
+                        //System.out.println("DEBUG : Paquet envoyé : " + Arrays.toString(bytes));
                         pkSender.send(packetSend);
 
-                        pkSender.receive(packetReceive);
-                        str = new String(packetReceive.getData(), 0, packetReceive.getLength());
-                        if (str.equals("recu")) {
-                            nAck++;
-                        }
+                        //pkSender.receive(packetReceive);
                         resend = false;
                     }
 

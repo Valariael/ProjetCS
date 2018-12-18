@@ -40,7 +40,7 @@ public class ConcurrentFileStream {
     }
 
     public synchronized void write(long filePointerOffset, byte[] bytes) {
-        System.out.println("DEBUG : ConcurrentFileStream : Fichier en cours d'édition " + fichier.getFilename() + " a la position " + filePointerOffset);
+        //System.out.println("DEBUG : ConcurrentFileStream : Fichier en cours d'édition " + fichier.getFilename() + " a la position " + filePointerOffset);
 
         try {
             //Sets the file-pointer offset, measured from the beginning of this file, at which the next read or write occurs.

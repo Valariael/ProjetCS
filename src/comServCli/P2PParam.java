@@ -21,5 +21,10 @@ public class P2PParam {
      * Temps d'attente maximum après envoi d'un DatagramPacket.
      */
     public static final int TIMEOUT_UDP = 30;
+    
+    /**
+     * Correspond au nombre maximal de tentatives d'envoi que l'on va réaliser avant d'abandonner.
+     */
+    public static final int NB_TENTATIVES_MAX = 5;
 
 }
