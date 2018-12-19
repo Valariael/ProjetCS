@@ -6,7 +6,9 @@
 package cli;
 
 import comServCli.AddressServer;
+import comServCli.BadRequestException;
 import comServCli.ListFilesServer;
+import comServCli.NoSuchFileException;
 import comServCli.P2PFile;
 import comServCli.P2PFunctions;
 import comServCli.P2PParam;
@@ -34,8 +36,7 @@ public class P2PClient {
 
     private static ArrayList<P2PFile> listeFichiersLocaux;
     private static ListFilesServer resultatsRecherche;
-    private static ArrayList<P2PFile> downloadableFiles;
-    private static AddressServer localAddress;
+    private static ArrayList<P2PFile> downloadableFiles = null;
 
     public static void main(String[] args) {
         resultatsRecherche = new ListFilesServer();
@@ -104,43 +105,57 @@ public class P2PClient {
             oos.writeObject(listeFichiersLocaux);
             oos.flush();
 
-            // Affichage du menu
+            String[] reponse_;
             do {
-                request = requestMenu();
-                String[] reponse_ = request.split(" ");
+                // Affichage du menu, récupération de l'entrée utilisateur et vérification de la taille de la requête
+                try {
+                    request = requestMenu();
+                    reponse_ = request.split(" ");
+                    if(reponse_.length > 3 || reponse_.length < 1) throw new BadRequestException("Requête malformée..");
+                } catch(BadRequestException e) {
+                    System.out.println(e);
+                    continue;
+                }
+                
+                // Application de la requête suivant les différentes possibilités
                 switch (reponse_[0]) {
                     case "search":
-                        // TODO: ne pas autoriser les requetes avec plus de x espaces
-                        //TODO: malformed request exception
-                        // TODO : Si le tableau est trop petit (search vide)
+                        if(reponse_.length > 2) {
+                            System.out.println("Le pattern recherché ne doit pas contenir d'espaces..");
+                            continue;
+                        }
                         String pattern = reponse_[1];
-                        System.out.println("Pattern recherché :" + pattern);
+                        System.out.println("Pattern recherché : " + pattern);
                         oos.writeBoolean(end);
                         oos.flush();
                         oos.writeObject(request);
                         oos.flush();
 
-                        resultatsRecherche = (ListFilesServer) ois.readObject();
-                        System.out.println("Liste des fichiers correspondants à votre recherche :\n");
-                        //TODO: handle null liste
+                        Object o = ois.readObject();
+                        if(o == null) {
+                            System.out.println("Aucun résultat pour votre recherche...");
+                        } else {
+                            resultatsRecherche = (ListFilesServer) o;
+                            System.out.println("Liste des fichiers correspondants à votre recherche :\n");
+                            downloadableFiles = P2PFunctions.setToArrayList(resultatsRecherche.keySet());
+                            P2PFunctions.afficherListe(downloadableFiles, true);
+                        }
                         //optimisation: changer listfilesserver en treemap
-                        downloadableFiles = P2PFunctions.setToArrayList(resultatsRecherche.keySet());
-                        P2PFunctions.afficherListe(downloadableFiles, true);
                         break;
                     case "get":
-                        //TODO: verifier que le fichier n'est pas déjà present sur le client
-
-                        //TODO: cas de la recherche non faite
-                        // Envoi d'une requête au serveur pour obtenir la liste des IPs
+                        // TODO : Envoi d'une requête au serveur pour obtenir la liste des IPs
                         ArrayList<AddressServer> sources = null;
                         RequeteDownload r = null;
                         // check that num is in range
                         // get sources and file from num associated with listfilesserver
 
                         try {
+                            if(resultatsRecherche.isEmpty()) throw new NoSuchFileException("Commencez par rechercher un fichier avec \"search <pattern>\"..");
                             int choix = Integer.parseInt(reponse_[1]) - 1; // -1 pour matcher avec la liste
                             P2PFile fichierADL = downloadableFiles.get(choix);
+                            if(listeFichiersLocaux.contains(fichierADL)) throw new FileAlreadyLocalException("Inutile de télécharger ce fichier, il est déjà présent sur le disque..");
                             sources = resultatsRecherche.getSourcesFromFile(fichierADL);
+                            
                             int nClients = sources.size();
                             long fileSize = fichierADL.getSize();
                             long nombreMorceaux = (long) Math.ceil((double)fileSize/P2PParam.TAILLE_BUF);
@@ -196,14 +211,19 @@ public class P2PClient {
                                         } else {
                                             // envoyer la requete a un autre client ?
                                         }
-
-                                        roos.close();
-                                        roos = null;
-                                        rois.close();
-                                        rois = null;
                                     } catch (IOException e) {
                                         e.printStackTrace();
                                         System.out.println(e);
+                                    } finally {
+                                        try {
+                                            roos.close();
+                                            roos = null;
+                                            rois.close();
+                                            rois = null;
+                                            socket.close();
+                                        } catch(IOException e) {
+                                            System.out.println(e);
+                                        }
                                     }
 
                                 } catch (SocketException ex) {
@@ -217,11 +237,18 @@ public class P2PClient {
 
                         } catch (NumberFormatException e) {
                             System.out.println("Vous n'avez pas entré un nombre ! ");
+                        } catch (FileAlreadyLocalException | NoSuchFileException e) {
+                            System.out.println(e);
                         }
                         break;
                     case "list":
-                        System.out.println("Liste des fichiers de votre dernière recherche : ");
-                        P2PFunctions.afficherListe(downloadableFiles, true);
+                        try {
+                            if(reponse_.length > 1) throw new BadRequestException("Veuillez écrire \"list\" uniquement..");
+                            System.out.println("Liste des fichiers de votre dernière recherche : ");
+                            P2PFunctions.afficherListe(downloadableFiles, true);
+                        } catch (BadRequestException e) {
+                            System.out.println(e);
+                        }
                         break;
                     case "local":
                         if (reponse_[1].equals("list")) {
@@ -281,8 +308,12 @@ public class P2PClient {
     public static String requestMenu() {
         System.out.println("Que voulez vous faire ?");
         System.out.println("\t search <pattern>");
-        System.out.println("\t get <num>"); // afficher l'option get num uniquement si une liste des fichiers  été récupérée
-        System.out.println("\t list");
+        if(!resultatsRecherche.isEmpty()) {
+            System.out.println("\t get <num>");
+        }
+        if(downloadableFiles != null) {
+            System.out.println("\t list");
+        }
         System.out.println("\t local list");
         System.out.println("\t quit");
 

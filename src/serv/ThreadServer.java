@@ -32,20 +32,22 @@ public class ThreadServer extends Thread {
     /**
      * Constructeur de la classe ThreadServer.
      * 
-     * @param comm le socket de communication du serveur lié au client connecté
+     * @param sockComm le socket de communication du serveur lié au client connecté
      * @param fileList la liste des fichiers accessibles par le serveur
      */
-    public ThreadServer(Socket comm, ListFilesServer fileList) {
-        this.sockComm = comm;
+    public ThreadServer(Socket sockComm, ListFilesServer fileList) {
+        this.sockComm = sockComm;
         this.fileList = fileList;
     }
     
     @Override
     public void run() {
+        ObjectOutputStream oos = null;
+        ObjectInputStream ois = null;
         try {
             // Instanciation des flux.
-            ObjectInputStream ois = new ObjectInputStream(sockComm.getInputStream());
-            ObjectOutputStream oos = new ObjectOutputStream(sockComm.getOutputStream());
+            ois = new ObjectInputStream(sockComm.getInputStream());
+            oos = new ObjectOutputStream(sockComm.getOutputStream());
             oos.flush();
             
             // On renvoie directement l'ip du client car c'est le seul moment ou on la connait :
@@ -78,6 +80,9 @@ public class ThreadServer extends Thread {
                 // Vérification de la requête.
                 // En cas d'erreur, lève une exception.
                 requestParts = request.split(" ");
+                if(requestParts.length < 1) {
+                    continue;
+                }
                 if(requestParts[0].equals("search")) {
                     // Recherche le pattern dans la liste des fichiers disponibles.
                     ListFilesServer filesSearched = fileList.searchPattern(requestParts[1]);
@@ -85,7 +90,9 @@ public class ThreadServer extends Thread {
                     
                     // Écriture de la liste des fichiers correspondant.
                     try {
-                        if(filesSearched == null) throw new NoSuchFileException("Aucun fichier trouvé..");
+                        if(filesSearched == null) {
+                            throw new NoSuchFileException("Aucun fichier trouvé..");
+                        }
                     } catch (NoSuchFileException e) {
                         System.out.println(e);
                     }
@@ -107,27 +114,38 @@ public class ThreadServer extends Thread {
                     }
                     oos.writeObject(sources);
                     oos.flush();
-                } else { // TODO : enhance exceptions
+                } else {
                     try {
                         throw new BadRequestException("Requête incorrecte..");
                     } catch (BadRequestException e) {
                         System.out.println(e);
-                        oos.writeObject(null); // TODO:gestion du retour d'erreur !!!!!!!!!!
+                        oos.writeObject(null);
                         oos.flush();
                     }
                 }
             }
             System.out.println("DEBUG, Fin du thread.");
 
-            // Fermeture des flux et de la connexion avec le client courant.
-            oos.close();
-            oos = null;
-            ois.close();
-            ois = null;
-            sockComm.close();
-            sockComm = null;
         } catch (IOException | ClassNotFoundException e) {
             System.out.println(e);
+        } finally {
+            // Fermeture des flux et de la connexion avec le client courant.
+            try {
+                if(oos != null) {
+                    oos.close();
+                    oos = null;
+                }
+                if(ois != null) {
+                    ois.close();
+                    ois = null;
+                }
+                if(sockComm != null) {
+                    sockComm.close();
+                    sockComm = null;
+                }
+            } catch(IOException e) {
+                System.out.println(e);
+            }
         }
     }
     

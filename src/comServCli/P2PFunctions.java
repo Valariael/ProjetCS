@@ -5,11 +5,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
 
-/* LPRO 2018/2019
-0  To change this license header, choose License Headers in Project Properties.
-0  To change this template file, choose Tools | Templates
-0  and open the template in the editor.
-0 */
 /**
  * Classe contenant les fonctions de traitement pour le client et le serveur.
  *
@@ -41,10 +36,11 @@ public class P2PFunctions {
                     System.out.println("\t " + (numerotee ? i + ". " : "- ") + fichier.toString());
                 }
             } else {
-                System.out.println("Il n'y a aucun résultat");
+                System.out.println("Il n'y a aucun résultat..");
             }
+        } else {
+            System.out.println("\tCommencez par faire une recherche..");
         }
-
     }
 
     /**
@@ -83,7 +79,7 @@ public class P2PFunctions {
     public static ArrayList<P2PFile> setToArrayList(Set<P2PFile> keySet) {
         Iterator<P2PFile> it = keySet.iterator();
         ArrayList<P2PFile> fileList = new ArrayList();
-
+        
         while (it.hasNext()) {
             fileList.add(it.next());
         }

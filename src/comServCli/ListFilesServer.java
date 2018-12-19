@@ -62,7 +62,7 @@ public class ListFilesServer extends ConcurrentHashMap<P2PFile, ArrayList<Addres
      */
     public synchronized void updateList(ArrayList<P2PFile> newFiles, AddressServer client) {
         if (newFiles != null && newFiles.size() >= 1) {
-            for (P2PFile f : newFiles) {
+            newFiles.forEach((f) -> {
                 ArrayList<AddressServer> clientList = new ArrayList();
                 if (this.get(f) != null) {
                     this.get(f).add(client);
@@ -70,9 +70,8 @@ public class ListFilesServer extends ConcurrentHashMap<P2PFile, ArrayList<Addres
                     clientList.add(client);
                     this.put(f, clientList);
                 }
-            }
+            });
         }
-
     }
 
     /**
