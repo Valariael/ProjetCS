@@ -153,7 +153,9 @@ public class P2PClient {
                             if(resultatsRecherche.isEmpty()) throw new NoSuchFileException("Commencez par rechercher un fichier avec \"search <pattern>\"..");
                             int choix = Integer.parseInt(reponse_[1]) - 1; // -1 pour matcher avec la liste
                             P2PFile fichierADL = downloadableFiles.get(choix);
-                            if(listeFichiersLocaux.contains(fichierADL)) throw new FileAlreadyLocalException("Inutile de télécharger ce fichier, il est déjà présent sur le disque..");
+                            if(listeFichiersLocaux != null) {
+                                if(listeFichiersLocaux.contains(fichierADL)) throw new FileAlreadyLocalException("Inutile de télécharger ce fichier, il est déjà présent sur le disque..");
+                            }
                             sources = resultatsRecherche.getSourcesFromFile(fichierADL);
                             
                             int nClients = sources.size();

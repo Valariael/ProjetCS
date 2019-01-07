@@ -16,6 +16,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.logging.Level;
@@ -54,28 +55,27 @@ public class ThreadSender extends Thread {
                 System.exit(1);
             }
 
-            long nAck = 0;
-            boolean resend = true;
             byte[] bytes; // On ajoute un long qui contient la position
             byte[] bufRequete = new byte[8000]; // TODO  : Change
             DatagramPacket packetSend, packetReceive = null;
             packetReceive = new DatagramPacket(bufRequete, bufRequete.length);
             DatagramSocket pkSender = new DatagramSocket();
+            ByteBuffer buffer;
             long nToBeSent = (dernierMorceau - premierMorceau);
             String str = nToBeSent + "";
             try {
-                while (resend) {
+                while (true) {
                     packetSend = new DatagramPacket(str.getBytes(), str.length(), new InetSocketAddress(destinataire.getHost(), destinataire.getPort()));
                     pkSender.send(packetSend);
 
                     // On lit le fichier morceau par morceau.
                     for (long i = premierMorceau; i < dernierMorceau; i++) {
-                        if(i==1997) {
+                        if (i == 1997) {
                             continue;
                         }
-                        System.out.println("Envoi du morceau"+i+"/"+dernierMorceau);
+                        System.out.println("Envoi du morceau" + i + "/" + dernierMorceau);
                         long position = i * P2PParam.TAILLE_BUF;
-                        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+                        buffer = ByteBuffer.allocate(Long.BYTES);
                         buffer.putLong(position);
                         stream.seek(position);
 
@@ -83,7 +83,7 @@ public class ThreadSender extends Thread {
                         long fileSize = fichier.getSize();
                         long nombreMorceaux = (long) Math.ceil((double) fileSize / P2PParam.TAILLE_BUF);
                         long tailleDernierMorceau = fileSize % P2PParam.TAILLE_BUF;
-                        System.out.println("i="+i+", fileSize="+fileSize+", nombreMorceaux="+nombreMorceaux+", tailleDernirMOrceau="+tailleDernierMorceau);
+                        //System.out.println("i=" + i + ", fileSize=" + fileSize + ", nombreMorceaux=" + nombreMorceaux + ", tailleDernirMOrceau=" + tailleDernierMorceau);
                         if (i == (nombreMorceaux - 1)) {
                             System.out.println("DEBUG  : Traitement du dernier morceau à l'envoi");
                             bytes = new byte[8 + (int) tailleDernierMorceau];
@@ -95,27 +95,29 @@ public class ThreadSender extends Thread {
                         System.arraycopy(buffer.array(), 0, bytes, 0, 8);
 
                         packetSend = new DatagramPacket(bytes, bytes.length, new InetSocketAddress(destinataire.getHost(), destinataire.getPort()));
-                        //System.out.println("DEBUG : Paquet envoyé : " + Arrays.toString(bytes));
                         pkSender.send(packetSend);
+                    }
+                    pkSender.setSoTimeout(15000);
+                    try {
+                        pkSender.receive(packetReceive);
+                        byte[] data = packetReceive.getData();
+                        String sLenght = new String(data).trim();
+                        Long retour = Long.valueOf(sLenght);
+                        if (retour == -1) {
+                            //  Si il n'en manque aucun :
+                            System.out.println("DEBUG : FIN DE TRANSMISSION IL NE MANQUE AUCUN PAQUET");
+                            break;
+                        } else {
+                            System.out.println("DEBUG : DEMANDE DE RE EMISSION DEPUIS " + retour);
+                            premierMorceau = retour;
 
-                        //pkSender.receive(packetReceive);
-                        resend = false;
+                        }
+                    } catch (SocketTimeoutException e) {
+                        System.out.println("DEBUG : Timeout a la reception");
+                        break;
                     }
 
-                    System.out.println("DEBUG: ACKS " + nAck + " / " + (nToBeSent + 1));
-                    /*if (nAck < nToBeSent) {
-                        resend = true;
-                        premierMorceau = nAck;
-                        String tot = "" + (nAck - nToBeSent);
-                        packetSend = new DatagramPacket(tot.getBytes(), tot.length(), new InetSocketAddress(destinataire.getHost(), destinataire.getPort()));
-                        pkSender.send(packetSend);
-                    } else {
-                        resend = false;
-                        packetSend = new DatagramPacket("0".getBytes(), 1, new InetSocketAddress(destinataire.getHost(), destinataire.getPort()));
-                        pkSender.send(packetSend);
-                    } */
                 }
-
             } catch (IOException e) {
                 System.out.println("DEBUG : ThreadSender : Echec de l'envoi");
                 System.out.println(e);
@@ -129,5 +131,6 @@ public class ThreadSender extends Thread {
         } catch (SocketException ex) {
             Logger.getLogger(ThreadSender.class.getName()).log(Level.SEVERE, null, ex);
         }
+        System.out.println("Fermeture du threadSender");
     }
 }

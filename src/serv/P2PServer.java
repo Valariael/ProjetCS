@@ -40,6 +40,8 @@ public class P2PServer {
         ListFilesServer fileList = new ListFilesServer();
 
         try {
+            System.out.println("Serveur P2PServer démarré ");
+            
             // Création du socket serveur.
             sockConn = new ServerSocket(portServ);
 
