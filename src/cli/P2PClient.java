@@ -185,6 +185,8 @@ public class P2PClient {
                             
                             // Découpe du fichier en x morceau :
                             long morceauxAttribues = 0;
+                            ArrayList<ThreadReceiver> threadList = new ArrayList<>();
+                            
                             // Création des ThreadReceiver : 
                             for (int i = 0; i < nClients; i++) {
                                 try {
@@ -219,6 +221,7 @@ public class P2PClient {
                                         if (rois.readBoolean()) {
                                             ThreadReceiver tr = new ThreadReceiver(sockUDPReceive, cfs, chunkStart, chunkEnd);
                                             tr.start();
+                                            threadList.add(tr);
                                         } else {
                                             // envoyer la requete a un autre client ?
                                         }
@@ -242,6 +245,19 @@ public class P2PClient {
                                     System.out.println(ex.getMessage());
                                 }
                             }
+                            
+                            // On attend la fin de l'execution de tous les threads avant de continuer.
+                            for(ThreadReceiver tr : threadList) {
+                                try {
+                                    tr.join();
+                                } catch (InterruptedException e) {
+                                    System.out.println("Erreur pendant le téléchargement..");
+                                }
+                            }
+                            // On met à jour la liste des fichiers locaux.
+                            if(threadList.size() > 0) {
+                                listeFichiersLocaux = P2PFunctions.getLocalFiles(repertoire);
+                            }
                         } catch (NumberFormatException e) {
                             System.out.println("Vous n'avez pas entré un nombre ! ");
                         } catch (FileAlreadyLocalException | NoSuchFileException e) {
@@ -258,11 +274,15 @@ public class P2PClient {
                         }
                         break;
                     case "local":
-                        if (reponse_[1].equals("list")) {
-                            System.out.println("Liste des fichiers que vous avez en local : ");
-                            P2PFunctions.afficherListe(listeFichiersLocaux);
+                        if(reponse_.length < 2) {
+                            System.out.println("Vouliez-vous écrire \"local list\" ?..");
                         } else {
-                            System.out.println("Ceci n'est pas un choix !");
+                            if (reponse_[1].equals("list")) {
+                                System.out.println("Liste des fichiers que vous avez en local : ");
+                                P2PFunctions.afficherListe(listeFichiersLocaux);
+                            } else {
+                                System.out.println("Ceci n'est pas un choix !");
+                            }
                         }
                         break;
                     case "quit":

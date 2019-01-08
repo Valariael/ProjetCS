@@ -67,9 +67,6 @@ public class ThreadSender extends Thread {
 
                     // On lit le fichier morceau par morceau.
                     for (long i = premierMorceau; i < dernierMorceau; i++) {
-                        if (i == 1997) {
-                            continue;
-                        }
                         System.out.println("Envoi du morceau" + i + "/" + dernierMorceau);
                         long position = i * P2PParam.TAILLE_BUF;
                         buffer = ByteBuffer.allocate(Long.BYTES);
@@ -113,7 +110,6 @@ public class ThreadSender extends Thread {
                         System.out.println("DEBUG : Timeout a la reception");
                         break;
                     }
-
                 }
             } catch (IOException e) {
                 System.out.println("DEBUG : ThreadSender : Echec de l'envoi");
