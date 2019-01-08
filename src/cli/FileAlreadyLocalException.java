@@ -1,6 +1,7 @@
 /*
- * LPRO 2018
+ * LPRO 2018/2019
  * Université de Franche-Comté
+ * Projet réalisé par Axel Couturier et Axel Ledermann.
  */
 package cli;
 

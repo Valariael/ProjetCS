@@ -1,8 +1,8 @@
-/* LPRO 2018/2019
-0  To change this license header, choose License Headers in Project Properties.
-0  To change this template file, choose Tools | Templates
-0  and open the template in the editor.
-0 */
+/*
+ * LPRO 2018/2019
+ * Université de Franche-Comté
+ * Projet réalisé par Axel Couturier et Axel Ledermann.
+ */
 package cli;
 
 import comServCli.AddressServer;
@@ -18,9 +18,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -51,7 +48,7 @@ public class ThreadSender extends Thread {
             try {
                 stream = new RandomAccessFile(folder + "\\" + fichier.getFilename(), "r");
             } catch (FileNotFoundException e) {
-                System.out.println(e); //TODO: gestion erreur
+                System.out.println(e);
                 System.exit(1);
             }
 
@@ -83,7 +80,7 @@ public class ThreadSender extends Thread {
                         long fileSize = fichier.getSize();
                         long nombreMorceaux = (long) Math.ceil((double) fileSize / P2PParam.TAILLE_BUF);
                         long tailleDernierMorceau = fileSize % P2PParam.TAILLE_BUF;
-                        //System.out.println("i=" + i + ", fileSize=" + fileSize + ", nombreMorceaux=" + nombreMorceaux + ", tailleDernirMOrceau=" + tailleDernierMorceau);
+
                         if (i == (nombreMorceaux - 1)) {
                             System.out.println("DEBUG  : Traitement du dernier morceau à l'envoi");
                             bytes = new byte[8 + (int) tailleDernierMorceau];
@@ -128,8 +125,8 @@ public class ThreadSender extends Thread {
                     System.out.println(e);
                 }
             }
-        } catch (SocketException ex) {
-            Logger.getLogger(ThreadSender.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SocketException e) {
+            System.out.println(e);
         }
         System.out.println("Fermeture du threadSender");
     }

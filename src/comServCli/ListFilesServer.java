@@ -1,6 +1,7 @@
 /*
- * LPRO 2018
+ * LPRO 2018/2019
  * Université de Franche-Comté
+ * Projet réalisé par Axel Couturier et Axel Ledermann.
  */
 package comServCli;
 
@@ -125,5 +126,4 @@ public class ListFilesServer extends ConcurrentHashMap<P2PFile, ArrayList<Addres
     public String toString() {
         return super.toString();
     }
-
 }

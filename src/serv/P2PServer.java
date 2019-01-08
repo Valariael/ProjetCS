@@ -1,6 +1,7 @@
 /*
- * LPRO 2018
+ * LPRO 2018/2019
  * Université de Franche-Comté
+ * Projet réalisé par Axel Couturier et Axel Ledermann.
  */
 package serv;
 
@@ -11,6 +12,8 @@ import java.net.Socket;
 
 /**
  * Classe principale pour le serveur P2P.
+ * 
+ * Lance un ThreadServer par client connecté.
  *
  * @author Axel Ledermann <axel.ledermann at univ-fcomte.org>
  */

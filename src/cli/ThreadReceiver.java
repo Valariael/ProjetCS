@@ -1,6 +1,7 @@
 /*
- * LPRO 2018
+ * LPRO 2018/2019
  * Université de Franche-Comté
+ * Projet réalisé par Axel Couturier et Axel Ledermann.
  */
 package cli;
 
@@ -17,7 +18,7 @@ import java.util.ArrayList;
  * Classe permettant la création d'un thread pour recevoir les données contenues
  * dans le fichier du client détenteur. ;
  *
- * @author Axel Couturier, Axel Ledermann
+ * @author Axel Couturier
  */
 public class ThreadReceiver extends Thread {
 
@@ -48,6 +49,7 @@ public class ThreadReceiver extends Thread {
     public void run() {
         int np;
         String str;
+        
         try {
             System.out.println("DEBUG :  ThreadReceiver démarré, début de reception");
 
@@ -107,7 +109,7 @@ public class ThreadReceiver extends Thread {
 
         // Création d'un tableau avec les numéros de tous les paquets attendus : 
         int nombrePaquets = (int) end - (int) start;
-        ArrayList<Long> PaquetsArrives = new ArrayList<>();
+        ArrayList<Long> paquetsArrives = new ArrayList<>();
 
         for (int i = 0; i < np; i++) {
             // Recoit les paquets et écrit dans le fichier de destination
@@ -122,8 +124,7 @@ public class ThreadReceiver extends Thread {
                 }
                 continue;
             }
-            //System.out.println("DEBUG : Paquet " + i + "/" + np + "taille paquet reçu " + (dp.getLength() - 8));
-
+            
             byte[] longforConv = new byte[8];
             System.arraycopy(dp.getData(), 0, longforConv, 0, 8);
             ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
@@ -131,7 +132,7 @@ public class ThreadReceiver extends Thread {
             buffer.flip();//need flip 
             long position = buffer.getLong();
             Long numeroPaquetRecu = position / P2PParam.TAILLE_BUF;
-            PaquetsArrives.add(numeroPaquetRecu);
+            paquetsArrives.add(numeroPaquetRecu);
             System.out.println("Paquet reçu : " + numeroPaquetRecu);
 
             byte[] dataToWrite = new byte[dp.getLength() - 8];
@@ -141,13 +142,13 @@ public class ThreadReceiver extends Thread {
         }
 
         // On va vérifier ce que l'on a reçu : 
-        if (PaquetsArrives.size() != np) {
-            System.out.println("DEBUG : IL manque "+(nombrePaquets-PaquetsArrives.size())+" paquets");
+        if (paquetsArrives.size() != np) {
+            System.out.println("DEBUG : Il manque "+(nombrePaquets-paquetsArrives.size())+" paquets");
             // On cherche quel est le plus petit paquet qui nous manque.
             BouclePaquet:
             for (long i = 0; i < np; i++) {
                 boolean arrive = false;
-                for (Long PaquetArrive : PaquetsArrives) {
+                for (Long PaquetArrive : paquetsArrives) {
                     if (PaquetArrive == i) {
                         arrive = true;
                         break;

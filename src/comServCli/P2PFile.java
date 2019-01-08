@@ -1,8 +1,8 @@
-/* LPRO 2018/2019
-0  To change this license header, choose License Headers in Project Properties.
-0  To change this template file, choose Tools | Templates
-0  and open the template in the editor.
-0 */
+/*
+ * LPRO 2018/2019
+ * Université de Franche-Comté
+ * Projet réalisé par Axel Couturier et Axel Ledermann.
+ */
 package comServCli;
 
 import java.io.Serializable;
@@ -17,7 +17,6 @@ public class P2PFile implements Serializable {
 
     private String filename;
     private long size;
-//    private File fichier;
 
     /**
      * Constructeur de P2PFile.
@@ -27,16 +26,8 @@ public class P2PFile implements Serializable {
      */
     public P2PFile(String filename, long size) {
         this.filename = filename;
-//        fichier = new File(filename);
-//        updateSize();
         this.size = size;
     }
-
-//    public void updateSize() {
-//        if (fichier.exists() && !fichier.isDirectory()) {
-//            size = fichier.length();
-//        }
-//    }
 
     @Override
     public int hashCode() {

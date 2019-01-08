@@ -1,8 +1,8 @@
-/* LPRO 2018/2019
-0  To change this license header, choose License Headers in Project Properties.
-0  To change this template file, choose Tools | Templates
-0  and open the template in the editor.
-0 */
+/*
+ * LPRO 2018/2019
+ * Université de Franche-Comté
+ * Projet réalisé par Axel Couturier et Axel Ledermann.
+ */
 package cli;
 
 import comServCli.AddressServer;
@@ -27,14 +27,20 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 /**
- *
+ * Classe principale du client P2P.
+ * Permet l'envoi de requêtes au serveur, y compris les requêtes de téléchargement
+ * qui mèneront à la création de sous processus.
+ * 
  * @author Axel Couturier
  */
 public class P2PClient {
 
+    // La liste des fichiers déjà possédés par le client.
     private static ArrayList<P2PFile> listeFichiersLocaux;
+    // Les entrées, couples fichier/liste d'adresses correspondant à la recherche.
     private static ListFilesServer resultatsRecherche;
-    private static ArrayList<P2PFile> downloadableFiles = null;
+    // La liste des fichiers téléchargeables.
+    private static ArrayList<P2PFile> fichiersTelechargeables = null;
 
     public static void main(String[] args) {
         resultatsRecherche = new ListFilesServer();
@@ -61,19 +67,21 @@ public class P2PClient {
             System.out.println("Numéro de port non autorisé ou non valide !");
             System.exit(1);
         }
-        final File folder = new File(args[2]);
-        if (!folder.isDirectory()) {
+        final File repertoire = new File(args[2]);
+        if (!repertoire.isDirectory()) {
             System.out.println("Le chemin entré n'est pas un dossier !");
             System.exit(1);
         }
 
-        boolean end = false;
+        boolean fin = false;
         String request;
         Socket sockConnServer = null;
+        ObjectOutputStream oos = null;
+        ObjectInputStream ois = null;
         try {
 
             // Dans un premier temps on va lister les fichiers qu'il y a dans le dossier  :
-            listeFichiersLocaux = P2PFunctions.getLocalFiles(folder);
+            listeFichiersLocaux = P2PFunctions.getLocalFiles(repertoire);
             if (listeFichiersLocaux == null) {
                 System.out.println("DEBUG : Pas de fichiers locaux.");
             }
@@ -85,17 +93,17 @@ public class P2PClient {
             // Connexion au serveur et instanciation des flux.
             sockConnServer = new Socket();
             sockConnServer.connect(new InetSocketAddress(ipServ, portServ));
-            ObjectOutputStream oos = new ObjectOutputStream(sockConnServer.getOutputStream());
+            oos = new ObjectOutputStream(sockConnServer.getOutputStream());
             oos.flush();
-            ObjectInputStream ois = new ObjectInputStream(sockConnServer.getInputStream());
+            ois = new ObjectInputStream(sockConnServer.getInputStream());
             
             // On va récuperer notre IP locale depuis le serveur car on ne sait pas laquelle est utilisée : 
             InetAddress myIP = (InetAddress) ois.readObject();
-            System.out.println("DEBUG : Selon le serveur, votre ip est "+myIP.getHostAddress());
+            System.out.println("DEBUG : Selon le serveur, votre IP est "+myIP.getHostAddress());
             
             // Création du thread client :
-            ThreadClient c = new ThreadClient(sockEcoute, folder); // passer la liste des fichiers locaux en objet partagé ?
-            c.start();
+            ThreadClient tc = new ThreadClient(sockEcoute, repertoire); // passer la liste des fichiers locaux en objet partagé ?
+            tc.start();
 
             // Transmettre au serveur le port local et la liste des fichiers locaux:
             oos.writeInt(sockEcoute.getLocalPort());
@@ -128,7 +136,7 @@ public class P2PClient {
                         }
                         String pattern = reponse_[1];
                         System.out.println("Pattern recherché : " + pattern);
-                        oos.writeBoolean(end);
+                        oos.writeBoolean(fin);
                         oos.flush();
                         oos.writeObject(request);
                         oos.flush();
@@ -143,20 +151,20 @@ public class P2PClient {
                             System.out.println("Aucun résultat pour votre recherche...");
                         } else {
                             resultatsRecherche = (ListFilesServer) o;
-                            System.out.println("Liste des fichiers correspondants à votre recherche :\n");
-                            downloadableFiles = P2PFunctions.setToArrayList(resultatsRecherche.keySet());
-                            P2PFunctions.afficherListe(downloadableFiles, true);
+                            System.out.print("Liste des fichiers correspondants à votre recherche :\n");
+                            fichiersTelechargeables = P2PFunctions.setToArrayList(resultatsRecherche.keySet());
+                            P2PFunctions.afficherListe(fichiersTelechargeables, true);
                         }
                         break;
                     case "get":
                         ArrayList<AddressServer> sources = null;
                         RequeteDownload r = null;
-                        // check that num is in range
                         
                         try {
                             if(resultatsRecherche.isEmpty()) throw new NoSuchFileException("Commencez par rechercher un fichier avec \"search <pattern>\"..");
                             int choix = Integer.parseInt(reponse_[1]) - 1; // -1 pour matcher avec la liste
-                            P2PFile fichierADL = downloadableFiles.get(choix);
+                            if(choix < 0 || choix >= fichiersTelechargeables.size()) throw new NoSuchFileException("Veuillez entrer une valeur valide..");
+                            P2PFile fichierADL = fichiersTelechargeables.get(choix);
                             if(listeFichiersLocaux != null) {
                                 if(listeFichiersLocaux.contains(fichierADL)) throw new FileAlreadyLocalException("Inutile de télécharger ce fichier, il est déjà présent sur le disque..");
                             }
@@ -170,25 +178,25 @@ public class P2PClient {
                             long nbMorceauxParClient = (long) Math.ceil(nombreMorceaux/nClients);
                             System.out.println("DEBUG: nClients=" + nClients + ", filesize=" + fileSize + ", nbMorceau="+nombreMorceaux+", nbMorceauxParClient="+nbMorceauxParClient);
                             
-                            ConcurrentFileStream cfs = new ConcurrentFileStream(folder, fichierADL);
+                            ConcurrentFileStream cfs = new ConcurrentFileStream(repertoire, fichierADL);
 
                             ObjectOutputStream roos = null;
                             ObjectInputStream rois = null;
                             
                             // Découpe du fichier en x morceau :
-                            long MorceauxAttribues = 0;
+                            long morceauxAttribues = 0;
                             // Création des ThreadReceiver : 
                             for (int i = 0; i < nClients; i++) {
                                 try {
                                     // Répartition entre les différents clients qui disposent de ce fichier : 
                                     DatagramSocket sockUDPReceive = new DatagramSocket();
-                                    chunkStart = MorceauxAttribues;
-                                    chunkEnd = MorceauxAttribues+nbMorceauxParClient;
+                                    chunkStart = morceauxAttribues;
+                                    chunkEnd = morceauxAttribues+nbMorceauxParClient;
                                     if(i == (nClients-1)) {
                                         // Si on est sur le dernier client :
                                         chunkEnd = nombreMorceaux;
                                     }
-                                    MorceauxAttribues =+ nbMorceauxParClient;
+                                    morceauxAttribues =+ nbMorceauxParClient;
                                     System.out.println("DEBUG : chunkStart: "+chunkStart+" chunkEnd: "+chunkEnd);
                                     
                                     // Création du socket pour communiquer la requête de téléchargement au client détenteur du fichier
@@ -211,8 +219,6 @@ public class P2PClient {
                                         if (rois.readBoolean()) {
                                             ThreadReceiver tr = new ThreadReceiver(sockUDPReceive, cfs, chunkStart, chunkEnd);
                                             tr.start();
-                                            
-                                            // incrémenter les variables
                                         } else {
                                             // envoyer la requete a un autre client ?
                                         }
@@ -236,10 +242,6 @@ public class P2PClient {
                                     System.out.println(ex.getMessage());
                                 }
                             }
-                            
-                            // Fermeture de l'écriture du fichier
-                            //cfs.close();
-
                         } catch (NumberFormatException e) {
                             System.out.println("Vous n'avez pas entré un nombre ! ");
                         } catch (FileAlreadyLocalException | NoSuchFileException e) {
@@ -250,7 +252,7 @@ public class P2PClient {
                         try {
                             if(reponse_.length > 1) throw new BadRequestException("Veuillez écrire \"list\" uniquement..");
                             System.out.println("Liste des fichiers de votre dernière recherche : ");
-                            P2PFunctions.afficherListe(downloadableFiles, true);
+                            P2PFunctions.afficherListe(fichiersTelechargeables, true);
                         } catch (BadRequestException e) {
                             System.out.println(e);
                         }
@@ -264,48 +266,38 @@ public class P2PClient {
                         }
                         break;
                     case "quit":
-                        end = true;
+                        fin = true;
                         break;
                     default:
                         System.out.println("Ceci n'est pas un choix !");
                         break;
                 }
-            } while (!end);
+            } while (!fin);
 
-            oos.writeBoolean(end);
+            // Fin du client, envoi des fichiers à enlever de la liste du serveur.
+            oos.writeBoolean(fin);
             oos.flush();
             oos.writeObject(listeFichiersLocaux);
             oos.flush();
-
-//            sockComm.send(pkRequete);
-//            bufRequete = new byte[100];
-//
-//            pkRequete = new DatagramPacket(bufRequete, bufRequete.length);
-//            sockComm.receive(pkRequete);
-//            System.out.println("Requete reçue en retour : " + new String(bufRequete, 0, pkRequete.getLength(), Charset.defaultCharset()));
-//
-//            System.out.println("Envoi du Hello");
-//            bufRequete = ((String) "Hello").getBytes();
-//            pkRequete.setData(bufRequete);
-//            sockComm.send(pkRequete);
-//
-//            bufRequete = new byte[100];
-//            pkRequete = new DatagramPacket(bufRequete, bufRequete.length);
-//            sockComm.receive(pkRequete);
-//            System.out.println("Requete reçue en retour du Hello : " + new String(bufRequete, 0, pkRequete.getLength(), Charset.defaultCharset()));
-            System.out.println("wrote");
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
             System.out.println(e);
         } finally {
-            // Fermeture du socket.
-            if (sockConnServer != null) {
-                try {
+            try {
+                // Fermeture des flux.
+                if(ois != null) {
+                    ois.close();
+                }
+                if(oos != null) {
+                    oos.close();
+                }
+            
+                // Fermeture du socket.
+                if (sockConnServer != null) {
                     sockConnServer.close();
                     System.exit(0);
-                } catch (IOException e) {
-                    System.out.println(e);
                 }
+            } catch (IOException e) {
+                System.out.println(e);
             }
         }
     }
@@ -321,12 +313,13 @@ public class P2PClient {
         if(!resultatsRecherche.isEmpty()) {
             System.out.println("\t get <num>");
         }
-        if(downloadableFiles != null) {
+        if(fichiersTelechargeables != null) {
             System.out.println("\t list");
         }
         System.out.println("\t local list");
         System.out.println("\t quit");
 
+        System.out.print("> ");
         Scanner sc = new Scanner(System.in);
         return sc.nextLine();
     }

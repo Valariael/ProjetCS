@@ -1,24 +1,21 @@
-/* LPRO 2018/2019
-0  To change this license header, choose License Headers in Project Properties.
-0  To change this template file, choose Tools | Templates
-0  and open the template in the editor.
-0 */
+/*
+ * LPRO 2018/2019
+ * Université de Franche-Comté
+ * Projet réalisé par Axel Couturier et Axel Ledermann.
+ */
 package cli;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
- *
+ * Thread intermédiaire précédant l'envoi des données lors d'un téléchargement.
+ * Réceptionne la requête de téléchargement et crée le ThreadSender qui enverra les données.
+ * 
  * @author Axel Couturier
  */
 public class ThreadClient extends Thread {
@@ -26,6 +23,12 @@ public class ThreadClient extends Thread {
     private ServerSocket ss;
     private File folder;
 
+    /**
+     * Constructeur principal du ThreadClient.
+     * 
+     * @param ss le ServerSocket d'où proviendra la requête de téléchargement
+     * @param folder le répertoire dans lequel sera écrit le fichier
+     */
     public ThreadClient(ServerSocket ss, File folder) {
         this.ss = ss;
         this.folder = folder;
@@ -34,32 +37,27 @@ public class ThreadClient extends Thread {
     @Override
     public void run() {
         try {
-            /* l’IP de l’hôte hébergeant l’application « P2PClient1 » ;
-            - le numéro de port de la socket UDP « sockUdpReceive2 » qui va recevoir les
-            morceaux du fichier de numéros compris dans l’intervalle [0, 5[ ;
-            - le nom et la taille du fichier à télécharger ;
-            - le numéro du premier morceau à envoyer (inclus) ;
-            - le numéro du dernier morceau à envoyer (exclu) ;
-             */
-            Socket s = ss.accept();
+            // Attente d'une connexion d'un autre client.
+            Socket initSocket = ss.accept();
             System.out.println("Connexion reçue");
-            ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
+            ObjectOutputStream oos = new ObjectOutputStream(initSocket.getOutputStream());
             oos.flush();
-            ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
+            ObjectInputStream ois = new ObjectInputStream(initSocket.getInputStream());
 
             // Reception d'une requete de téléchargement : 
-            RequeteDownload r = (RequeteDownload) ois.readObject();
+            RequeteDownload rd = (RequeteDownload) ois.readObject();
             oos.writeBoolean(true);
             oos.flush();
-            ThreadSender ts = new ThreadSender(r, folder);
-            ts.run();
+            ThreadSender ts = new ThreadSender(rd, folder);
+            ts.start();
 
-            s.close();
-            s = null;
-        } catch (IOException ex) {
-            Logger.getLogger(ThreadClient.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (ClassNotFoundException ex) {
-            Logger.getLogger(ThreadClient.class.getName()).log(Level.SEVERE, null, ex);
+            ois.close();
+            oos.close();
+            initSocket.close();
+            initSocket = null;
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+            System.out.println(e);
         }
     }
 }
