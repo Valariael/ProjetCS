@@ -48,7 +48,6 @@ public class ListFilesServer extends ConcurrentHashMap<P2PFile, ArrayList<Addres
                 // Ajout de l'entrée dans la liste à retourner.
                 couplesSearched.put(file, (ArrayList) paire.getValue());
             }
-            it.remove(); // permet d'éviter ConcurrentModificationException
         }
 
         return couplesSearched;
@@ -71,6 +70,44 @@ public class ListFilesServer extends ConcurrentHashMap<P2PFile, ArrayList<Addres
                     this.put(f, clientList);
                 }
             });
+        }
+    }
+    
+    /**
+     * Enlève le client des sources disponibles pour une liste de fichiers.
+     * 
+     * @param filesToRemove la liste de fichiers qui ne sera plus disponible depuis ce client
+     * @param client le client/source à supprimer
+     */
+    public synchronized void removeList(ArrayList<P2PFile> filesToRemove, AddressServer client) {
+        if (filesToRemove != null && filesToRemove.size() >= 1) {
+            Iterator it = this.entrySet().iterator();
+            
+            // Pour chaque fichier dans la liste du serveur,
+            while (it.hasNext()) {
+                // On parcourt les fichiers que le client possédait,
+                filesToRemove.forEach((f) -> {
+                    P2PFile file;
+                    ArrayList<AddressServer> sources;
+                    
+                    Map.Entry paire = (Map.Entry) it.next();
+                    file = (P2PFile) paire.getKey();
+                    sources = (ArrayList<AddressServer>) paire.getValue();
+                    
+                    if (f.equals(file)) {
+                        // Suppression du client des sources disponibles.
+                        if (sources.contains(client)) {
+                            sources.remove(client);
+                            if(sources.isEmpty()) {
+                                this.remove(file);
+                            } else {
+                                // On remplace l'entrée par la liste sans le client déconnecté.
+                                this.put(file, sources);
+                            }
+                        }
+                    }
+                });
+            }
         }
     }
 

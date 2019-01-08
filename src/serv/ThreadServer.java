@@ -42,6 +42,7 @@ public class ThreadServer extends Thread {
     
     @Override
     public void run() {
+        AddressServer client = null;
         ObjectOutputStream oos = null;
         ObjectInputStream ois = null;
         try {
@@ -56,7 +57,7 @@ public class ThreadServer extends Thread {
             
             // Création des variables et de l'AddressServer correspondant au client connecté
             int portSockEcoute = ois.readInt();
-            AddressServer client = new AddressServer(sockComm.getInetAddress().getHostAddress(), portSockEcoute);
+            client = new AddressServer(sockComm.getInetAddress().getHostAddress(), portSockEcoute);
             String request;
             String[] requestParts;
             
@@ -76,6 +77,9 @@ public class ThreadServer extends Thread {
                 // Réception de la requête.
                 request = (String) ois.readObject();
                 System.out.println("DEBUG, Requête : " + request);
+                
+                clientFiles = (ArrayList<P2PFile>) ois.readObject();
+                fileList.updateList(clientFiles, client);
                 
                 // Vérification de la requête.
                 // En cas d'erreur, lève une exception.
@@ -124,8 +128,11 @@ public class ThreadServer extends Thread {
                     }
                 }
             }
+            
+            // Réception de la liste des fichiers locaux du client pour les enlever de la liste des sources.
+             ArrayList<P2PFile> filesToRemove = (ArrayList<P2PFile>) ois.readObject();
+             fileList.removeList(filesToRemove, client);
             System.out.println("DEBUG, Fin du thread.");
-
         } catch (IOException | ClassNotFoundException e) {
             System.out.println(e);
         } finally {
