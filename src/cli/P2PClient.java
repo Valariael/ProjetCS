@@ -25,8 +25,6 @@ import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -99,7 +97,7 @@ public class P2PClient {
             ThreadClient c = new ThreadClient(sockEcoute, folder); // passer la liste des fichiers locaux en objet partagé ?
             c.start();
 
-            // Transmettre au serveur la liste des fichiers locaux + AddressServeur du socketDecoute local:
+            // Transmettre au serveur le port local et la liste des fichiers locaux:
             oos.writeInt(sockEcoute.getLocalPort());
             oos.flush();
             oos.writeObject(listeFichiersLocaux);
@@ -124,11 +122,20 @@ public class P2PClient {
                             System.out.println("Le pattern recherché ne doit pas contenir d'espaces..");
                             continue;
                         }
+                        if(reponse_.length < 2) {
+                            System.out.println("Veuillez écrire la séquence recherchée après \"search\"..");
+                            continue;
+                        }
                         String pattern = reponse_[1];
                         System.out.println("Pattern recherché : " + pattern);
                         oos.writeBoolean(end);
                         oos.flush();
                         oos.writeObject(request);
+                        oos.flush();
+                        
+                        
+                        // On envoie la liste des fichiers locaux avant chaque requête pour s'assurer de la justesse du retour.
+                        oos.writeObject(listeFichiersLocaux);
                         oos.flush();
 
                         Object o = ois.readObject();
@@ -140,15 +147,12 @@ public class P2PClient {
                             downloadableFiles = P2PFunctions.setToArrayList(resultatsRecherche.keySet());
                             P2PFunctions.afficherListe(downloadableFiles, true);
                         }
-                        //optimisation: changer listfilesserver en treemap
                         break;
                     case "get":
-                        // TODO : Envoi d'une requête au serveur pour obtenir la liste des IPs
                         ArrayList<AddressServer> sources = null;
                         RequeteDownload r = null;
                         // check that num is in range
-                        // get sources and file from num associated with listfilesserver
-
+                        
                         try {
                             if(resultatsRecherche.isEmpty()) throw new NoSuchFileException("Commencez par rechercher un fichier avec \"search <pattern>\"..");
                             int choix = Integer.parseInt(reponse_[1]) - 1; // -1 pour matcher avec la liste
@@ -208,7 +212,6 @@ public class P2PClient {
                                             ThreadReceiver tr = new ThreadReceiver(sockUDPReceive, cfs, chunkStart, chunkEnd);
                                             tr.start();
                                             
-                                            //tr.join();
                                             // incrémenter les variables
                                         } else {
                                             // envoyer la requete a un autre client ?
@@ -270,6 +273,9 @@ public class P2PClient {
             } while (!end);
 
             oos.writeBoolean(end);
+            oos.flush();
+            oos.writeObject(listeFichiersLocaux);
+            oos.flush();
 
 //            sockComm.send(pkRequete);
 //            bufRequete = new byte[100];
@@ -287,14 +293,16 @@ public class P2PClient {
 //            pkRequete = new DatagramPacket(bufRequete, bufRequete.length);
 //            sockComm.receive(pkRequete);
 //            System.out.println("Requete reçue en retour du Hello : " + new String(bufRequete, 0, pkRequete.getLength(), Charset.defaultCharset()));
+            System.out.println("wrote");
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
             System.out.println(e);
         } finally {
-            // close flux
+            // Fermeture du socket.
             if (sockConnServer != null) {
                 try {
                     sockConnServer.close();
+                    System.exit(0);
                 } catch (IOException e) {
                     System.out.println(e);
                 }

@@ -39,7 +39,7 @@ public class P2PFunctions {
                 System.out.println("Il n'y a aucun résultat..");
             }
         } else {
-            System.out.println("\tCommencez par faire une recherche..");
+            System.out.println("\tListe vide..");
         }
     }
 
@@ -65,7 +65,6 @@ public class P2PFunctions {
                 System.out.println("DEBUG : (localfile) " + folder.getAbsolutePath() + "\\" + fileEntry.getName());
             }
         }
-        // TODO: possibilité d'évolution = recherche récursive des fichiers
 
         return fileList;
     }
@@ -83,7 +82,10 @@ public class P2PFunctions {
         while (it.hasNext()) {
             fileList.add(it.next());
         }
-
+        if(fileList.isEmpty()) {
+            return null;
+        }
+        
         return fileList;
     }
 }
